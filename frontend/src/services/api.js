@@ -121,3 +121,17 @@ export async function fetchImprovementPlan(candidateId = 'candidate_001') {
   if (!res.ok) throw new Error('Failed to fetch improvement plan');
   return res.json();
 }
+
+export async function fetchNextQuestion(sessionId) {
+  const res = await fetch(`${BASE_URL}/api/interviews/${sessionId}/question`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to fetch next question');
+  return res.json();
+}
+
+export async function fetchSessionFeedback(sessionId) {
+  const res = await fetch(`${BASE_URL}/api/interviews/${sessionId}/feedback`);
+  if (!res.ok) throw new Error('Failed to fetch session feedback');
+  return res.json();
+}

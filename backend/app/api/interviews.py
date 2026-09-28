@@ -25,7 +25,9 @@ from app.schemas.interview import (
     RolePracticeStartRequest,
     ResumeJDStartRequest,
     HRStartRequest,
+    GenericInterviewStartRequest,
     TextResponseSubmitRequest,
+    GenericTextResponseRequest,
     FollowUpSubmitRequest,
     SessionResponse,
 )
@@ -48,6 +50,45 @@ PRESET_ROLES = [
 @router.get("/interview-modes/role-practice/roles")
 def get_available_roles():
     return {"roles": PRESET_ROLES}
+
+
+@router.post("/interviews")
+def start_interview_session(req: GenericInterviewStartRequest, db: Session = Depends(get_db)):
+    profile = db.query(CandidateProfile).filter_by(candidate_id=req.candidate_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    session_id = f"sess_{uuid.uuid4().hex[:10]}"
+    mode = req.mode or "role_practice"
+    role = req.target_role or "SDE"
+    session = InterviewSession(
+        session_id=session_id,
+        candidate_id=req.candidate_id,
+        mode=mode,
+        target_role=role,
+        difficulty=req.difficulty,
+        competency=req.competency,
+        status="active",
+    )
+    db.add(session)
+    db.commit()
+
+    q_agent = QuestionAgent(db_session=db)
+    q_output = q_agent.select_or_generate_question(
+        mode=mode,
+        target_role=role,
+        difficulty=req.difficulty,
+        competency=req.competency,
+        candidate_profile=profile.to_dict(),
+    )
+
+    return {
+        "session_id": session_id,
+        "mode": mode,
+        "target_role": role,
+        "difficulty": req.difficulty,
+        "question": q_output.model_dump(),
+    }
 
 
 @router.post("/interviews/role-practice")
@@ -198,6 +239,35 @@ def get_interview_session(session_id: str, db: Session = Depends(get_db)):
     return {
         "session": session.to_dict(),
         "responses": [r.to_dict() for r in session.responses],
+    }
+
+
+@router.post("/interviews/{session_id}/question")
+def get_next_question_for_session(session_id: str, db: Session = Depends(get_db)):
+    session = db.query(InterviewSession).filter_by(session_id=session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Get previously asked questions in this session
+    previous_questions = [r.question_text for r in session.responses]
+
+    q_agent = QuestionAgent(db_session=db)
+    q_output = q_agent.select_or_generate_question(
+        mode=session.mode,
+        target_role=session.target_role,
+        difficulty=session.difficulty,
+        competency=session.competency,
+        topics=json.loads(session.topics) if session.topics else None,
+        candidate_profile=session.candidate.to_dict() if session.candidate else None,
+        resume_text=session.resume_text,
+        jd_text=session.jd_text,
+        previous_questions=previous_questions,
+    )
+
+    return {
+        "session_id": session_id,
+        "mode": session.mode,
+        "question": q_output.model_dump(),
     }
 
 
@@ -583,3 +653,33 @@ def get_session_feedback(session_id: str, db: Session = Depends(get_db)):
         .all()
     )
     return [fb.to_dict() for fb in feedbacks]
+
+
+@router.post("/responses/text")
+def submit_generic_text_response(req: GenericTextResponseRequest, db: Session = Depends(get_db)):
+    return submit_text_response(
+        session_id=req.session_id,
+        req=TextResponseSubmitRequest(
+            response=req.response,
+            question_id=req.question_id,
+            question_text=req.question_text
+        ),
+        db=db
+    )
+
+
+@router.post("/responses/voice")
+async def submit_generic_voice_response(
+    session_id: str = Form(...),
+    audio_file: UploadFile = File(...),
+    question_id: Optional[str] = Form(None),
+    question_text: Optional[str] = Form("General interview question"),
+    db: Session = Depends(get_db),
+):
+    return await submit_voice_response(
+        session_id=session_id,
+        audio_file=audio_file,
+        question_id=question_id,
+        question_text=question_text,
+        db=db
+    )

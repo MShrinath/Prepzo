@@ -95,3 +95,34 @@ def test_role_practice_flow():
     assert res.status_code == 200
     progress = res.json()
     assert progress["total_sessions"] >= 1
+
+    # 5. Test next question in session (POST /api/interviews/{session_id}/question)
+    res = client.post(f"/api/interviews/{session_id}/question")
+    assert res.status_code == 200
+    next_q_data = res.json()
+    assert "question" in next_q_data
+    assert "question" in next_q_data["question"]
+
+
+def test_generic_interview_and_response():
+    # Test POST /api/interviews
+    start_payload = {
+        "candidate_id": "candidate_001",
+        "target_role": "Full Stack Developer",
+        "difficulty": "medium",
+        "mode": "role_practice"
+    }
+    res = client.post("/api/interviews", json=start_payload)
+    assert res.status_code == 200
+    session_id = res.json()["session_id"]
+
+    # Test POST /api/responses/text
+    resp_payload = {
+        "session_id": session_id,
+        "response": "I use Zustand for lightweight global state and TanStack Query for caching server state in React.",
+        "question_text": "How do you manage client-side state in React?"
+    }
+    res = client.post("/api/responses/text", json=resp_payload)
+    assert res.status_code == 200
+    assert "coaching_feedback" in res.json()
+

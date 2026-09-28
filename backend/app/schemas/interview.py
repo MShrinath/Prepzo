@@ -30,7 +30,23 @@ class HRStartRequest(BaseModel):
     topics: List[str] = ["conflict_resolution", "receiving_feedback", "stress_management"]
 
 
+class GenericInterviewStartRequest(BaseModel):
+    candidate_id: str
+    target_role: Optional[str] = "SDE"
+    difficulty: str = "medium"
+    question_type: Optional[str] = "technical"
+    mode: Optional[str] = "role_practice"
+    competency: Optional[str] = None
+
+
 class TextResponseSubmitRequest(BaseModel):
+    response: str
+    question_id: Optional[str] = None
+    question_text: Optional[str] = None
+
+
+class GenericTextResponseRequest(BaseModel):
+    session_id: str
     response: str
     question_id: Optional[str] = None
     question_text: Optional[str] = None

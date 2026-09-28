@@ -5,7 +5,7 @@ import InterviewScreen from './components/InterviewScreen';
 import FeedbackView from './components/FeedbackView';
 import ProgressDashboard from './components/ProgressDashboard';
 import ProfileView from './components/ProfileView';
-import { fetchCandidateProfile } from './services/api';
+import { fetchCandidateProfile, fetchNextQuestion } from './services/api';
 
 export default function App() {
   const [currentView, setView] = useState('modes'); // 'modes' | 'interview' | 'feedback' | 'dashboard' | 'profile'
@@ -38,6 +38,23 @@ export default function App() {
     setView('feedback');
   };
 
+  const handleNextQuestion = async () => {
+    if (sessionData && sessionData.session_id) {
+      try {
+        const nextQ = await fetchNextQuestion(sessionData.session_id);
+        setSessionData(prev => ({
+          ...prev,
+          question: nextQ.question,
+        }));
+        setView('interview');
+        return;
+      } catch (err) {
+        console.warn('Failed to fetch next question in session, returning to modes:', err);
+      }
+    }
+    setView('modes');
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       <Navbar
@@ -65,7 +82,7 @@ export default function App() {
         {currentView === 'feedback' && evaluationResult && (
           <FeedbackView
             evaluationData={evaluationResult}
-            onNextQuestion={() => setView('modes')}
+            onNextQuestion={handleNextQuestion}
             onExit={() => setView('modes')}
           />
         )}
