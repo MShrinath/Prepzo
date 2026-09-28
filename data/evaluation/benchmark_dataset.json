@@ -1,0 +1,74 @@
+[
+  {
+    "id": "eval_001",
+    "mode": "role_practice",
+    "role": "SDE",
+    "question": "How would you optimize a Python API endpoint that is experiencing high latency under heavy traffic?",
+    "question_type": "technical",
+    "competency": "Problem Solving",
+    "candidate_response": "I would first connect an APM tool like Datadog or run py-spy to capture production flamegraphs. If the issue is database I/O bound, I would inspect pg_stat_activity to check for unindexed queries and add composite indexes. I would also introduce Redis for read-through caching of frequent payloads and configure connection pooling via PgBouncer. For CPU-bound tasks, I would offload background jobs to Celery workers with Redis as a broker.",
+    "expected_min_score": 75,
+    "expected_strengths": ["profiling", "caching", "database"],
+    "expected_issues": []
+  },
+  {
+    "id": "eval_002",
+    "mode": "role_practice",
+    "role": "SDE",
+    "question": "How would you optimize a Python API endpoint that is experiencing high latency under heavy traffic?",
+    "question_type": "technical",
+    "competency": "Problem Solving",
+    "candidate_response": "Um, basically, you know, we would probably just like add more servers or increase the RAM. And, uh, maybe restart the database if it gets stuck.",
+    "expected_max_score": 60,
+    "expected_strengths": [],
+    "expected_issues": ["filler words", "lacks technical depth", "superficial scaling"]
+  },
+  {
+    "id": "eval_003",
+    "mode": "role_practice",
+    "role": "SDE",
+    "question": "Tell me about a time you identified a critical bug in production. How did you diagnose and resolve it under pressure?",
+    "question_type": "behavioral",
+    "competency": "Ownership & Accountability",
+    "candidate_response": "Our production database suffered connection exhaustion during Black Friday. As the primary on-call engineer, I analyzed Grafana connection spikes, identified a connection leak in an unclosed async SQLAlchemy session context manager, and deployed a targeted hotfix with an automated rollback script. After stabilizing the service within 12 minutes, I added an automated linter check in our CI pipeline to prevent unclosed sessions. Total user error rate dropped back from 18% to 0%.",
+    "expected_min_score": 80,
+    "expected_strengths": ["clear STAR structure", "strong personal ownership", "quantifiable results"],
+    "expected_issues": []
+  },
+  {
+    "id": "eval_004",
+    "mode": "role_practice",
+    "role": "SDE",
+    "question": "Tell me about a time you identified a critical bug in production. How did you diagnose and resolve it under pressure?",
+    "question_type": "behavioral",
+    "competency": "Ownership & Accountability",
+    "candidate_response": "There was a huge bug in our app and everyone was panicked. We all stayed up late and looked at logs together and eventually someone found the issue and fixed the code, so everything was fine after that.",
+    "expected_max_score": 58,
+    "expected_strengths": [],
+    "expected_issues": ["Weak personal ownership ('we' instead of 'I')", "Missing measurable result", "Vague technical detail"]
+  },
+  {
+    "id": "eval_005",
+    "mode": "hr",
+    "role": "HR",
+    "question": "Tell me about a time you had a strong disagreement with a teammate or lead regarding a project direction. How did you handle it, and what was the outcome?",
+    "question_type": "behavioral",
+    "competency": "Teamwork & Conflict Resolution",
+    "candidate_response": "My tech lead wanted to migrate our relational database to MongoDB for a new financial transaction feature, but I was concerned about ACID transactional integrity and multi-table reconciliation. Instead of arguing, I created a benchmarking benchmark comparison simulating race conditions under concurrent ledger updates. I presented the empirical data in an objective design review. The lead appreciated the rigorous analysis, and we agreed to maintain PostgreSQL with JSONB columns for flexible schemas. The project launched with zero ledger inconsistencies.",
+    "expected_min_score": 80,
+    "expected_strengths": ["data-driven resolution", "respectful collaboration", "clear outcome"],
+    "expected_issues": []
+  },
+  {
+    "id": "eval_006",
+    "mode": "resume_jd",
+    "role": "AI/ML Engineer",
+    "question": "How do you evaluate and mitigate hallucinations or inaccuracies in a Retrieval-Augmented Generation (RAG) pipeline?",
+    "question_type": "technical",
+    "competency": "Technical Depth & Domain Mastery",
+    "candidate_response": "To mitigate hallucinations, I evaluate the pipeline across two dimensions: retrieval accuracy and generation groundedness using the RAGAS framework (faithfulness and answer relevance). On the retrieval side, I use hybrid search (BM25 + Cohere dense embeddings) with a cross-encoder reranker to ensure high context precision. For the generator, I use strict system prompts requiring explicit citation of context chunks and set the temperature to 0.0, backed by automated JSON schema validation.",
+    "expected_min_score": 85,
+    "expected_strengths": ["evaluation framework mention (RAGAS)", "hybrid search and reranking", "strict generation controls"],
+    "expected_issues": []
+  }
+]

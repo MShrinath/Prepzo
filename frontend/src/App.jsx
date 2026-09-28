@@ -1,0 +1,92 @@
+import React, { useState, useEffect } from 'react';
+import Navbar from './components/Navbar';
+import ModeSelect from './components/ModeSelect';
+import InterviewScreen from './components/InterviewScreen';
+import FeedbackView from './components/FeedbackView';
+import ProgressDashboard from './components/ProgressDashboard';
+import ProfileView from './components/ProfileView';
+import { fetchCandidateProfile } from './services/api';
+
+export default function App() {
+  const [currentView, setView] = useState('modes'); // 'modes' | 'interview' | 'feedback' | 'dashboard' | 'profile'
+  const [candidate, setCandidate] = useState({
+    candidate_id: 'candidate_001',
+    name: 'Alex Taylor',
+    target_role: 'SDE',
+    experience_years: 2,
+    skills: [],
+    projects: [],
+  });
+  const [sessionData, setSessionData] = useState(null);
+  const [evaluationResult, setEvaluationResult] = useState(null);
+
+  useEffect(() => {
+    fetchCandidateProfile('candidate_001')
+      .then(profile => {
+        if (profile) setCandidate(profile);
+      })
+      .catch(err => console.log('Using baseline candidate data:', err));
+  }, []);
+
+  const handleStartInterview = (newSession) => {
+    setSessionData(newSession);
+    setView('interview');
+  };
+
+  const handleEvaluationComplete = (result) => {
+    setEvaluationResult(result);
+    setView('feedback');
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+      <Navbar
+        currentView={currentView}
+        setView={setView}
+        candidate={candidate}
+      />
+
+      <main className="flex-1 pb-16">
+        {currentView === 'modes' && (
+          <ModeSelect
+            onStartInterview={handleStartInterview}
+            candidate={candidate}
+          />
+        )}
+
+        {currentView === 'interview' && sessionData && (
+          <InterviewScreen
+            sessionData={sessionData}
+            onBack={() => setView('modes')}
+            onCompleteEvaluation={handleEvaluationComplete}
+          />
+        )}
+
+        {currentView === 'feedback' && evaluationResult && (
+          <FeedbackView
+            evaluationData={evaluationResult}
+            onNextQuestion={() => setView('modes')}
+            onExit={() => setView('modes')}
+          />
+        )}
+
+        {currentView === 'dashboard' && (
+          <ProgressDashboard
+            candidate={candidate}
+          />
+        )}
+
+        {currentView === 'profile' && (
+          <ProfileView
+            candidate={candidate}
+            onProfileUpdated={(updated) => setCandidate(updated)}
+          />
+        )}
+      </main>
+
+      <footer className="border-t border-slate-900 py-6 text-center text-xs text-slate-500">
+        AI-Powered Communication & Interview Coaching System &bull; LangGraph Multi-Agent Architecture &bull; PostgreSQL &bull; Whisper
+      </footer>
+    </div>
+  );
+}

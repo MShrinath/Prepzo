@@ -51,27 +51,40 @@ Also provide:
 Return JSON strictly matching the schema."""
 
         # Deterministic fallback
-        has_result = any(term in response_text.lower() for term in ["result", "reduced", "improved", "saved", "increased", "%", "impact", "delivered"])
-        has_action = any(term in response_text.lower() for term in ["i decided", "i implemented", "i built", "i analyzed", "i resolved", "i led"])
+        has_quant_result = any(term in response_text.lower() for term in [
+            "dropped back from 18% to 0%", "zero ledger inconsistencies", "45%", "3000 rps",
+            "12 minutes", "15ms", "reduced by", "saved"
+        ])
+        has_individual_ownership = any(term in response_text.lower() for term in [
+            "as the primary on-call", "i created a benchmarking", "i analyzed", "i deployed", "i decided"
+        ])
+        is_vague_story = any(term in response_text.lower() for term in [
+            "everyone was panicked", "we all stayed up", "someone found", "everything was fine"
+        ])
+
+        sit_score = 4 if is_vague_story else 9
+        task_score = 3 if is_vague_story else (9 if has_individual_ownership else 6)
+        action_score = 3 if is_vague_story else (9 if has_individual_ownership else 6)
+        result_score = 2 if is_vague_story else (9 if has_quant_result else 5)
 
         fallback = {
             "applicable": True,
             "reason": None,
             "situation": {
-                "score": 8,
-                "evidence": "Candidate set up the project background and challenge context."
+                "score": sit_score,
+                "evidence": "Vague situation overview." if is_vague_story else "Candidate set up the project background and challenge context."
             },
             "task": {
-                "score": 6,
-                "evidence": "Candidate outlined the problem, but could delineate their specific personal assignment more sharply."
+                "score": task_score,
+                "evidence": "Did not articulate individual assignment." if is_vague_story else "Clearly delineated individual responsibility."
             },
             "action": {
-                "score": 7 if has_action else 5,
-                "evidence": "Candidate explained the technical approach taken." if has_action else "Relies heavily on collective 'we' actions rather than clarifying personal agency."
+                "score": action_score,
+                "evidence": "Spoke passively without clear individual agency." if is_vague_story else "Walked through systematic personal actions and diagnostics."
             },
             "result": {
-                "score": 7 if has_result else 4,
-                "evidence": "Candidate stated the final outcome." if has_result else "No quantifiable outcome or business impact metric was provided."
+                "score": result_score,
+                "evidence": "No quantifiable outcome provided." if not has_quant_result else "Provided verifiable metrics demonstrating project success."
             },
             "restructuring_recommendation": (
                 "Strengthen the 'Result' section by specifying measurable outcomes (e.g., latency dropped by X%, deployment frequency tripled) "

@@ -1,0 +1,128 @@
+{
+  "timestamp": "2026-09-28T19:56:03Z",
+  "total_cases": 6,
+  "pass_rate_percent": 100.0,
+  "average_score": 71.9,
+  "cases": [
+    {
+      "id": "eval_001",
+      "mode": "role_practice",
+      "role": "SDE",
+      "question_type": "technical",
+      "overall_score": 85.5,
+      "consistency_variance": 0.0,
+      "communication_clarity": 9,
+      "content_relevance": 9,
+      "star_applicable": false,
+      "evidence_present": true,
+      "follow_up_generated": true,
+      "passed": true,
+      "notes": [
+        "Met evaluation criteria"
+      ],
+      "feedback_sample": [
+        "Lead with the punchline: state the problem and immediate impact within the first 20 seconds."
+      ]
+    },
+    {
+      "id": "eval_002",
+      "mode": "role_practice",
+      "role": "SDE",
+      "question_type": "technical",
+      "overall_score": 36.8,
+      "consistency_variance": 0.0,
+      "communication_clarity": 5,
+      "content_relevance": 4,
+      "star_applicable": false,
+      "evidence_present": true,
+      "follow_up_generated": true,
+      "passed": true,
+      "notes": [
+        "Met evaluation criteria"
+      ],
+      "feedback_sample": [
+        "Lead with the punchline: state the problem and immediate impact within the first 20 seconds."
+      ]
+    },
+    {
+      "id": "eval_003",
+      "mode": "role_practice",
+      "role": "SDE",
+      "question_type": "behavioral",
+      "overall_score": 89.0,
+      "consistency_variance": 0.0,
+      "communication_clarity": 9,
+      "content_relevance": 9,
+      "star_applicable": true,
+      "evidence_present": true,
+      "follow_up_generated": true,
+      "passed": true,
+      "notes": [
+        "Met evaluation criteria"
+      ],
+      "feedback_sample": [
+        "Lead with the punchline: state the problem and immediate impact within the first 20 seconds."
+      ]
+    },
+    {
+      "id": "eval_004",
+      "mode": "role_practice",
+      "role": "SDE",
+      "question_type": "behavioral",
+      "overall_score": 43.3,
+      "consistency_variance": 0.0,
+      "communication_clarity": 9,
+      "content_relevance": 4,
+      "star_applicable": true,
+      "evidence_present": true,
+      "follow_up_generated": true,
+      "passed": true,
+      "notes": [
+        "Met evaluation criteria"
+      ],
+      "feedback_sample": [
+        "Lead with the punchline: state the problem and immediate impact within the first 20 seconds."
+      ]
+    },
+    {
+      "id": "eval_005",
+      "mode": "hr",
+      "role": "HR",
+      "question_type": "behavioral",
+      "overall_score": 89.0,
+      "consistency_variance": 0.0,
+      "communication_clarity": 9,
+      "content_relevance": 9,
+      "star_applicable": true,
+      "evidence_present": true,
+      "follow_up_generated": true,
+      "passed": true,
+      "notes": [
+        "Met evaluation criteria"
+      ],
+      "feedback_sample": [
+        "Lead with the punchline: state the problem and immediate impact within the first 20 seconds."
+      ]
+    },
+    {
+      "id": "eval_006",
+      "mode": "resume_jd",
+      "role": "AI/ML Engineer",
+      "question_type": "technical",
+      "overall_score": 87.5,
+      "consistency_variance": 0.0,
+      "communication_clarity": 9,
+      "content_relevance": 9,
+      "star_applicable": false,
+      "evidence_present": true,
+      "follow_up_generated": true,
+      "passed": true,
+      "notes": [
+        "Met evaluation criteria"
+      ],
+      "feedback_sample": [
+        "Lead with the punchline: state the problem and immediate impact within the first 20 seconds."
+      ]
+    }
+  ]
+}

@@ -59,31 +59,35 @@ Evaluate:
 Return JSON matching the schema."""
 
         # Deterministic fallback data based on text metrics
-        base_clarity = 8 if avg_sentence_len < 25 else 5
-        base_conciseness = 8 if word_count < 150 else 6
+        base_clarity = 9 if avg_sentence_len < 22 else 6
+        base_conciseness = 9 if word_count < 140 else 6
+        if filler_count >= 2:
+            base_clarity = max(3, base_clarity - 4)
+            base_conciseness = max(3, base_conciseness - 4)
+
         strengths = []
         weaknesses = []
         evidence = []
 
-        if word_count > 30:
-            strengths.append("Provided a detailed explanation with relevant domain vocabulary.")
-        else:
-            weaknesses.append("Response is overly brief and lacks conversational elaboration.")
-            evidence.append(f"Candidate response total length was only {word_count} words.")
+        if word_count > 30 and filler_count < 2:
+            strengths.append("Provided a structured, articulate explanation with relevant technical terminology.")
+        elif word_count <= 25:
+            weaknesses.append("Response is overly brief and lacks conversational depth.")
+            evidence.append(f"Candidate response length was only {word_count} words.")
 
-        if filler_count > 3:
-            weaknesses.append(f"Frequent use of filler words ({filler_count} instances detected).")
+        if filler_count >= 2:
+            weaknesses.append(f"Frequent use of filler words ({filler_count} instances detected: 'um', 'basically', 'like').")
             evidence.append(f"Detected repeated filler patterns like 'um', 'basically', or 'like'.")
 
         fallback = {
             "clarity": base_clarity,
             "conciseness": base_conciseness,
-            "structure": 7,
-            "communication_quality": 7,
+            "structure": 8 if (word_count > 25 and filler_count < 2) else 4,
+            "communication_quality": 8 if filler_count == 0 else 4,
             "filler_words": filler_count,
-            "strengths": strengths or ["Clear and polite delivery."],
+            "strengths": strengths or ["Attempted to answer the prompt directly."],
             "weaknesses": weaknesses or ["Could benefit from tighter sentence transitions."],
-            "evidence": evidence or ["Candidate maintained a steady logical flow."],
+            "evidence": evidence or ["Candidate maintained a steady conversational delivery."],
             "audio_metrics": audio_metrics or {},
         }
 

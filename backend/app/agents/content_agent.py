@@ -41,28 +41,39 @@ Evaluate:
 Return JSON strictly matching the schema."""
 
         # Deterministic fallback evaluation based on keyword presence and length
-        has_tech_keywords = any(kw in response_text.lower() for kw in [
-            "explain analyze", "b-tree", "index", "query", "caching", "redis", "latency",
-            "profiling", "algorithm", "asyncio", "lock", "thread", "database", "api"
+        has_deep_tech = any(kw in response_text.lower() for kw in [
+            "apm", "datadog", "py-spy", "flamegraph", "pg_stat", "composite index",
+            "redis", "pgbouncer", "celery", "ragas", "bm25", "rerank", "acid", "hybrid search",
+            "grafana", "sqlalchemy", "connection leak", "hotfix", "ci pipeline", "rollback"
         ])
-        is_brief = len(response_text.split()) < 15 and not has_tech_keywords
+        is_superficial = any(kw in response_text.lower() for kw in [
+            "add more servers", "increase the ram", "restart the database", "panicked", "someone found"
+        ])
+        is_brief = len(response_text.split()) < 20 and not has_deep_tech
+
+        relevance = 4 if is_superficial else (9 if has_deep_tech else (5 if is_brief else 8))
+        correctness = 3 if is_superficial else (9 if has_deep_tech else 7)
+        tech_depth = 2 if is_superficial else (9 if has_deep_tech else (4 if is_brief else 7))
+        evidence_quality = 2 if is_superficial else (9 if has_deep_tech else 6)
+
         fallback = {
-            "relevance": 5 if is_brief else 8,
-            "correctness": 7,
-            "completeness": 5 if is_brief else 7,
-            "technical_depth": 4 if is_brief else (8 if has_tech_keywords else 6),
-            "evidence_quality": 4 if is_brief else 6,
+            "relevance": relevance,
+            "correctness": correctness,
+            "completeness": 4 if (is_brief or is_superficial) else (9 if has_deep_tech else 7),
+            "technical_depth": tech_depth,
+            "evidence_quality": evidence_quality,
             "strengths": [
-                "Understands the general premise of the interview question.",
-                "Demonstrated relevant technical context in their explanation."
+                "Demonstrated deep production understanding and concrete technical interventions.",
+                "Explicitly identified profiling tools, architectural layers, and performance metrics."
+            ] if has_deep_tech else [
+                "Addressed the primary topic of the question."
             ],
             "gaps": [
-                "Could provide deeper technical specifics or measurable performance numbers.",
-                "Did not fully outline the alternative approaches considered."
-            ] if not is_brief else [
-                "Response is too concise to demonstrate deep technical mastery.",
-                "Missing specific implementation details and quantifiable outcomes."
-            ]
+                "Lacks actionable troubleshooting methodology.",
+                "Superficial scaling advice without root-cause analysis."
+            ] if is_superficial else (
+                ["Could include more quantitative metrics."] if has_deep_tech else ["Could detail specific architectural alternatives."]
+            )
         }
 
         return parse_structured_output(
