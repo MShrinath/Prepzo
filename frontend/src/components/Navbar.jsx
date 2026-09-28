@@ -1,60 +1,67 @@
 import React from 'react';
-import { Bot, User, BarChart3, Play, Sparkles } from 'lucide-react';
+import { Play, BarChart2, User, Mic2 } from 'lucide-react';
 
 export default function Navbar({ currentView, setView, candidate }) {
+  const isPracticeActive = currentView === 'modes' || currentView === 'interview';
+
   return (
-    <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setView('modes')}>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <Bot className="w-6 h-6 text-white" />
+    <header className="sticky top-0 z-50 backdrop-blur-2xl bg-black/70 border-b border-white/[0.08]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        {/* Brand / Logo */}
+        <div
+          className="flex items-center space-x-2.5 cursor-pointer select-none group"
+          onClick={() => setView('modes')}
+        >
+          <div className="w-8 h-8 rounded-xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center text-white shadow-apple-pill group-hover:bg-white/[0.12] transition-colors">
+            <Mic2 className="w-4 h-4 text-[#0A84FF]" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-lg text-white tracking-tight">InterviewCoach AI</span>
-              <span className="px-2 py-0.5 text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> LangGraph
+              <span className="font-semibold text-base text-white tracking-tight">Revv</span>
+              <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-full bg-white/[0.06] text-[#98989D] border border-white/[0.06]">
+                Studio
               </span>
             </div>
-            <p className="text-xs text-slate-400">Multi-Agent Communication & Interview Platform</p>
           </div>
         </div>
 
-        <nav className="flex items-center space-x-1 sm:space-x-2">
+        {/* Center: Apple-style Segmented Control */}
+        <nav className="flex items-center p-1 rounded-full bg-white/[0.06] border border-white/[0.06]">
           <button
             onClick={() => setView('modes')}
-            className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition ${
-              currentView === 'modes' || currentView === 'interview'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center space-x-1.5 transition-all duration-200 ${
+              isPracticeActive
+                ? 'bg-white/[0.14] text-white shadow-apple-pill font-semibold'
+                : 'text-[#98989D] hover:text-white'
             }`}
           >
-            <Play className="w-4 h-4" />
+            <Play className="w-3.5 h-3.5 fill-current" />
             <span>Practice</span>
           </button>
 
           <button
             onClick={() => setView('dashboard')}
-            className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center space-x-1.5 transition-all duration-200 ${
               currentView === 'dashboard'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                ? 'bg-white/[0.14] text-white shadow-apple-pill font-semibold'
+                : 'text-[#98989D] hover:text-white'
             }`}
           >
-            <BarChart3 className="w-4 h-4" />
-            <span>Progress & Plan</span>
+            <BarChart2 className="w-3.5 h-3.5" />
+            <span>Analytics</span>
           </button>
 
           <button
             onClick={() => setView('profile')}
-            className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center space-x-1.5 transition-all duration-200 ${
               currentView === 'profile'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                ? 'bg-white/[0.14] text-white shadow-apple-pill font-semibold'
+                : 'text-[#98989D] hover:text-white'
             }`}
           >
-            <User className="w-4 h-4" />
+            <User className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{candidate ? candidate.name : 'Profile'}</span>
+            <span className="sm:hidden">Profile</span>
           </button>
         </nav>
       </div>

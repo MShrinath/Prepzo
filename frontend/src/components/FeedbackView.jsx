@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
-  CheckCircle2, AlertTriangle, ArrowRight, Sparkles, MessageSquare,
-  Award, ShieldAlert, CornerDownRight, RotateCcw, Send, Volume2
+  CheckCircle2, ArrowRight, Sparkles, MessageSquare,
+  Award, ShieldAlert, CornerDownRight, RotateCcw, Send, Volume2,
+  ChevronRight, ArrowLeft
 } from 'lucide-react';
 import { submitFollowUpAnswer } from '../services/api';
 
@@ -15,7 +16,7 @@ export default function FeedbackView({ evaluationData, onNextQuestion, onExit })
   const content = evaluationData?.content_evaluation || {};
   const star = evaluationData?.star_evaluation || {};
 
-  const overallScore = Math.round(coach.overall_score || 75);
+  const overallScore = Math.round(coach.overall_score !== undefined ? coach.overall_score : 75);
   const questionText = evaluationData?.question_text || "Interview Question";
   const responseText = evaluationData?.response_text || evaluationData?.transcript || "";
   const followUpQuestion = coach.follow_up_question;
@@ -37,188 +38,225 @@ export default function FeedbackView({ evaluationData, onNextQuestion, onExit })
     }
   };
 
-  const getScoreColor = (score) => {
-    if (score >= 80) return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
-    if (score >= 60) return "text-amber-400 border-amber-500/30 bg-amber-500/10";
-    return "text-red-400 border-red-500/30 bg-red-500/10";
+  const getScoreInfo = (score) => {
+    if (score >= 80) {
+      return {
+        label: "Exceeds Expectations",
+        color: "text-[#30D158]",
+        bg: "bg-[#30D158]/15",
+        border: "border-[#30D158]/30",
+        ringColor: "#30D158",
+      };
+    }
+    if (score >= 60) {
+      return {
+        label: "Proficient",
+        color: "text-[#FF9F0A]",
+        bg: "bg-[#FF9F0A]/15",
+        border: "border-[#FF9F0A]/30",
+        ringColor: "#FF9F0A",
+      };
+    }
+    return {
+      label: "Needs Practice",
+      color: "text-[#FF453A]",
+      bg: "bg-[#FF453A]/15",
+      border: "border-[#FF453A]/30",
+      ringColor: "#FF453A",
+    };
   };
 
-  return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-      {/* Top Banner: Overall Score & Summary */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+  const scoreInfo = getScoreInfo(overallScore);
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative z-10">
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-7">
+      {/* Dossier Header & Overall Score */}
+      <div className="bg-white/[0.04] border border-white/[0.08] rounded-3xl p-6 sm:p-8 shadow-apple-card backdrop-blur-2xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center space-x-2 text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">
-              <Sparkles className="w-4 h-4" />
-              <span>Multi-Agent Synthesis Complete</span>
+            <div className="flex items-center space-x-2 text-xs font-semibold text-[#0A84FF] tracking-wide uppercase mb-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Evaluation Report</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Evaluation & Coaching Report
+            <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">
+              Session Assessment
             </h1>
-            <p className="text-sm text-slate-400 mt-1 max-w-xl">
-              Specialized analysis by Communication, Content, and STAR Agents synthesized by the Coach Agent.
+            <p className="text-xs sm:text-sm text-[#98989D] mt-1 max-w-lg leading-relaxed">
+              Consolidated evaluation of your response across communication clarity, technical depth, and structural impact.
             </p>
           </div>
 
-          <div className="flex items-center space-x-4 bg-slate-800/80 p-4 rounded-2xl border border-slate-700">
-            <div className="text-center">
-              <span className="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+          {/* Apple-style Metric Badge */}
+          <div className="flex items-center space-x-4 bg-white/[0.04] border border-white/[0.08] p-4 sm:p-5 rounded-2xl shadow-sm">
+            <div className="text-center pr-4 border-r border-white/[0.08]">
+              <span className="block text-[10px] uppercase font-semibold tracking-wider text-[#98989D] mb-0.5">
                 Overall Score
               </span>
-              <div className="text-4xl font-black text-white tracking-tight">
-                {overallScore}<span className="text-lg text-slate-500 font-normal">/100</span>
+              <div className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                {overallScore}<span className="text-base text-[#636366] font-normal">/100</span>
               </div>
             </div>
-            <div className={`px-3 py-1.5 rounded-xl border text-xs font-bold uppercase tracking-wider ${getScoreColor(overallScore)}`}>
-              {overallScore >= 80 ? "Exceeds Expectations" : (overallScore >= 60 ? "Proficient" : "Needs Practice")}
+            <div>
+              <span className="block text-[10px] uppercase font-semibold tracking-wider text-[#98989D] mb-1">
+                Verdict
+              </span>
+              <div className={`px-3 py-1 rounded-full border text-xs font-semibold tracking-wide ${scoreInfo.color} ${scoreInfo.bg} ${scoreInfo.border}`}>
+                {scoreInfo.label}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Question & Answer Summary Accordion */}
-        <div className="mt-6 pt-6 border-t border-slate-800/80 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/60">
-            <span className="font-semibold text-slate-400 uppercase tracking-wider block mb-1">Original Question:</span>
-            <p className="text-slate-200 font-medium">{questionText}</p>
+        {/* Question & Answer Summary */}
+        <div className="mt-6 pt-6 border-t border-white/[0.08] grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div className="bg-white/[0.02] p-4 rounded-2xl border border-white/[0.06]">
+            <span className="text-[#98989D] font-medium block mb-1">Question Prompt</span>
+            <p className="text-white leading-relaxed font-medium">{questionText}</p>
           </div>
-          <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/60">
-            <span className="font-semibold text-slate-400 uppercase tracking-wider block mb-1">Candidate Answer / Transcript:</span>
-            <p className="text-slate-300 italic line-clamp-3">"{responseText}"</p>
+          <div className="bg-white/[0.02] p-4 rounded-2xl border border-white/[0.06]">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[#98989D] font-medium">Your Response</span>
+              <span className="text-[11px] text-[#636366]">
+                {responseText ? responseText.split(/\s+/).length : 0} words
+              </span>
+            </div>
+            <p className="text-[#D1D1D6] italic line-clamp-3 leading-relaxed">
+              "{responseText || "No response text captured."}"
+            </p>
           </div>
         </div>
       </div>
 
       {/* Tri-Agent Breakdown Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* 1. Communication Agent */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        <div className="bg-white/[0.04] border border-white/[0.08] rounded-3xl p-5 sm:p-6 shadow-apple-card backdrop-blur-2xl flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-base text-white flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-indigo-400" />
-                <span>Communication</span>
+              <h3 className="font-semibold text-sm text-white flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[#0A84FF]" />
+                <span>Delivery & Clarity</span>
               </h3>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">
-                {comm.communication_quality_score ? `${comm.communication_quality_score}/10` : '8/10'}
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#0A84FF]/15 text-[#0A84FF] font-semibold border border-[#0A84FF]/25">
+                {comm.communication_quality_score ? `${comm.communication_quality_score}/10` : '—'}
               </span>
             </div>
 
-            <div className="space-y-2 mb-4 text-xs">
-              <div className="flex justify-between text-slate-400">
+            <div className="space-y-2.5 mb-4 text-xs">
+              <div className="flex justify-between text-[#98989D]">
                 <span>Clarity:</span>
-                <span className="font-semibold text-white">{comm.clarity_score || 8}/10</span>
+                <span className="font-semibold text-white">{comm.clarity_score !== undefined ? comm.clarity_score : '—'}/10</span>
               </div>
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between text-[#98989D]">
                 <span>Conciseness:</span>
-                <span className="font-semibold text-white">{comm.conciseness_score || 7}/10</span>
+                <span className="font-semibold text-white">{comm.conciseness_score !== undefined ? comm.conciseness_score : '—'}/10</span>
               </div>
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between text-[#98989D]">
                 <span>Structure:</span>
-                <span className="font-semibold text-white">{comm.structure_score || 8}/10</span>
+                <span className="font-semibold text-white">{comm.structure_score !== undefined ? comm.structure_score : '—'}/10</span>
               </div>
               {comm.filler_words_score !== undefined && (
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-[#98989D]">
                   <span>Filler Words:</span>
-                  <span className="font-semibold text-amber-400">{comm.filler_words_score} detected</span>
+                  <span className={`font-semibold ${comm.filler_words_score > 3 ? 'text-[#FF9F0A]' : 'text-[#30D158]'}`}>
+                    {comm.filler_words_score} detected
+                  </span>
                 </div>
               )}
             </div>
 
             {comm.weaknesses && comm.weaknesses.length > 0 && (
-              <div className="text-xs text-slate-400 border-t border-slate-800 pt-3">
-                <span className="font-semibold text-slate-300 block mb-1">Key Observation:</span>
-                <p className="text-slate-300">{comm.weaknesses[0]}</p>
+              <div className="text-xs text-[#98989D] border-t border-white/[0.06] pt-3">
+                <span className="text-white font-medium block mb-1">Key Observation:</span>
+                <p className="text-[#D1D1D6] leading-relaxed text-[11px]">{comm.weaknesses[0]}</p>
               </div>
             )}
           </div>
         </div>
 
         {/* 2. Content Evaluation Agent */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        <div className="bg-white/[0.04] border border-white/[0.08] rounded-3xl p-5 sm:p-6 shadow-apple-card backdrop-blur-2xl flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-base text-white flex items-center gap-2">
-                <Award className="w-5 h-5 text-emerald-400" />
-                <span>Content & Depth</span>
+              <h3 className="font-semibold text-sm text-white flex items-center gap-2">
+                <Award className="w-4 h-4 text-[#30D158]" />
+                <span>Technical Depth</span>
               </h3>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
-                {content.relevance_score ? `${content.relevance_score}/10` : '8/10'}
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#30D158]/15 text-[#30D158] font-semibold border border-[#30D158]/25">
+                {content.relevance_score ? `${content.relevance_score}/10` : '—'}
               </span>
             </div>
 
-            <div className="space-y-2 mb-4 text-xs">
-              <div className="flex justify-between text-slate-400">
+            <div className="space-y-2.5 mb-4 text-xs">
+              <div className="flex justify-between text-[#98989D]">
                 <span>Relevance:</span>
-                <span className="font-semibold text-white">{content.relevance_score || 8}/10</span>
+                <span className="font-semibold text-white">{content.relevance_score !== undefined ? content.relevance_score : '—'}/10</span>
               </div>
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between text-[#98989D]">
                 <span>Technical Depth:</span>
-                <span className="font-semibold text-white">{content.technical_depth_score || 7}/10</span>
+                <span className="font-semibold text-white">{content.technical_depth_score !== undefined ? content.technical_depth_score : '—'}/10</span>
               </div>
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between text-[#98989D]">
                 <span>Correctness:</span>
-                <span className="font-semibold text-white">{content.correctness_score || 8}/10</span>
+                <span className="font-semibold text-white">{content.correctness_score !== undefined ? content.correctness_score : '—'}/10</span>
               </div>
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between text-[#98989D]">
                 <span>Completeness:</span>
-                <span className="font-semibold text-white">{content.completeness_score || 7}/10</span>
+                <span className="font-semibold text-white">{content.completeness_score !== undefined ? content.completeness_score : '—'}/10</span>
               </div>
             </div>
 
             {content.gaps && content.gaps.length > 0 && (
-              <div className="text-xs text-slate-400 border-t border-slate-800 pt-3">
-                <span className="font-semibold text-slate-300 block mb-1">Missing Detail:</span>
-                <p className="text-slate-300">{content.gaps[0]}</p>
+              <div className="text-xs text-[#98989D] border-t border-white/[0.06] pt-3">
+                <span className="text-white font-medium block mb-1">Missing Concept:</span>
+                <p className="text-[#D1D1D6] leading-relaxed text-[11px]">{content.gaps[0]}</p>
               </div>
             )}
           </div>
         </div>
 
         {/* 3. STAR Structure Agent */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        <div className="bg-white/[0.04] border border-white/[0.08] rounded-3xl p-5 sm:p-6 shadow-apple-card backdrop-blur-2xl flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-base text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-400" />
-                <span>STAR Structure</span>
+              <h3 className="font-semibold text-sm text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#FF9F0A]" />
+                <span>STAR Framework</span>
               </h3>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20">
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#FF9F0A]/15 text-[#FF9F0A] font-semibold border border-[#FF9F0A]/25">
                 {star.applicable ? "Behavioral" : "Technical"}
               </span>
             </div>
 
             {star.applicable ? (
               <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
-                <div className="bg-slate-800/60 p-2 rounded-lg">
-                  <span className="text-slate-400 block text-[10px]">Situation</span>
-                  <span className="font-bold text-white">{star.situation?.score || 7}/10</span>
+                <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
+                  <span className="text-[#98989D] block text-[10px]">SITUATION</span>
+                  <span className="font-semibold text-white">{star.situation?.score || 0}/10</span>
                 </div>
-                <div className="bg-slate-800/60 p-2 rounded-lg">
-                  <span className="text-slate-400 block text-[10px]">Task</span>
-                  <span className="font-bold text-white">{star.task?.score || 6}/10</span>
+                <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
+                  <span className="text-[#98989D] block text-[10px]">TASK</span>
+                  <span className="font-semibold text-white">{star.task?.score || 0}/10</span>
                 </div>
-                <div className="bg-slate-800/60 p-2 rounded-lg">
-                  <span className="text-slate-400 block text-[10px]">Action</span>
-                  <span className="font-bold text-white">{star.action?.score || 7}/10</span>
+                <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
+                  <span className="text-[#98989D] block text-[10px]">ACTION</span>
+                  <span className="font-semibold text-white">{star.action?.score || 0}/10</span>
                 </div>
-                <div className="bg-slate-800/60 p-2 rounded-lg">
-                  <span className="text-slate-400 block text-[10px]">Result</span>
-                  <span className="font-bold text-white">{star.result?.score || 5}/10</span>
+                <div className="bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06]">
+                  <span className="text-[#98989D] block text-[10px]">RESULT</span>
+                  <span className="font-semibold text-white">{star.result?.score || 0}/10</span>
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-800/40 p-3 rounded-xl border border-slate-800 text-xs text-slate-400 mb-4">
-                STAR structure is role-tailored for behavioral responses. For technical questions, problem scoping and architectural trade-offs are prioritized.
+              <div className="bg-white/[0.02] p-3 rounded-2xl border border-white/[0.06] text-xs text-[#98989D] mb-4 leading-relaxed">
+                STAR framework is tailored for behavioral questions. For system design and technical prompts, architectural trade-offs are prioritized.
               </div>
             )}
 
             {star.restructuring_recommendation && (
-              <div className="text-xs text-slate-400 border-t border-slate-800 pt-3">
-                <span className="font-semibold text-slate-300 block mb-1">Structure Advice:</span>
-                <p className="text-slate-300 text-[11px] leading-relaxed">{star.restructuring_recommendation}</p>
+              <div className="text-xs text-[#98989D] border-t border-white/[0.06] pt-3">
+                <span className="text-white font-medium block mb-1">Structural Guidance:</span>
+                <p className="text-[#D1D1D6] text-[11px] leading-relaxed">{star.restructuring_recommendation}</p>
               </div>
             )}
           </div>
@@ -226,51 +264,51 @@ export default function FeedbackView({ evaluationData, onNextQuestion, onExit })
       </div>
 
       {/* Evidence-Based Coaching Findings */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <ShieldAlert className="w-5 h-5 text-amber-400" />
-          <span>Evidence-Based Feedback & Actionable Recommendations</span>
+      <div className="bg-white/[0.04] border border-white/[0.08] rounded-3xl p-6 sm:p-8 shadow-apple-card backdrop-blur-2xl">
+        <h3 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <ShieldAlert className="w-5 h-5 text-[#FF9F0A]" />
+          <span>Evidence-Based Observations</span>
         </h3>
 
         {coach.evidence_items && coach.evidence_items.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             {coach.evidence_items.map((item, idx) => (
-              <div key={idx} className="bg-slate-800/50 border border-slate-700/60 rounded-xl p-4 text-xs">
+              <div key={idx} className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 text-xs">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-white text-sm">{item.issue}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    item.severity === 'high' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                    item.severity === 'medium' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                    'bg-slate-700 text-slate-300'
+                  <span className="font-semibold text-white text-sm">{item.issue}</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
+                    item.severity === 'high' ? 'bg-[#FF453A]/15 text-[#FF453A] border border-[#FF453A]/25' :
+                    item.severity === 'medium' ? 'bg-[#FF9F0A]/15 text-[#FF9F0A] border border-[#FF9F0A]/25' :
+                    'bg-white/[0.06] text-[#98989D]'
                   }`}>
                     {item.severity} severity
                   </span>
                 </div>
-                <div className="mb-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 text-slate-300 italic">
-                  <span className="font-semibold not-italic text-slate-400 mr-1">Evidence:</span>
+                <div className="mb-2 bg-black/40 p-3 rounded-xl border border-white/[0.06] text-[#D1D1D6] italic text-[11px] leading-relaxed">
+                  <span className="font-semibold not-italic text-[#98989D] mr-2">Observed:</span>
                   "{item.evidence}"
                 </div>
-                <div className="text-indigo-300 font-medium">
-                  <span className="font-semibold text-slate-400 mr-1">Recommendation:</span>
+                <div className="text-[#0A84FF] font-medium leading-relaxed">
+                  <span className="text-[#98989D] mr-2">Coach Suggestion:</span>
                   {item.recommendation}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-xs text-slate-400">No critical evidence gaps detected in this answer.</p>
+          <p className="text-xs text-[#98989D]">No critical evidence gaps detected in this answer.</p>
         )}
 
         {/* Actionable Advice List */}
         {coach.actionable_advice && coach.actionable_advice.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-slate-800">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-              Actionable Coaching Priorities:
+          <div className="mt-6 pt-6 border-t border-white/[0.08]">
+            <h4 className="text-xs font-semibold text-[#98989D] uppercase tracking-wider mb-3">
+              Actionable Priorities
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {coach.actionable_advice.map((adv, i) => (
-                <div key={i} className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-3 text-xs text-slate-300 flex items-start space-x-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                <div key={i} className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-3 text-xs text-[#EBEBF5] flex items-start space-x-2 leading-relaxed">
+                  <CheckCircle2 className="w-4 h-4 text-[#0A84FF] shrink-0 mt-0.5" />
                   <span>{adv}</span>
                 </div>
               ))}
@@ -281,15 +319,15 @@ export default function FeedbackView({ evaluationData, onNextQuestion, onExit })
 
       {/* Improved Answer Structure Example */}
       {coach.improved_answer_structure && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
-          <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-            <CornerDownRight className="w-5 h-5 text-indigo-400" />
-            <span>Optimal Answer Restructuring</span>
+        <div className="bg-white/[0.04] border border-white/[0.08] rounded-3xl p-6 sm:p-8 shadow-apple-card backdrop-blur-2xl">
+          <h3 className="text-base sm:text-lg font-semibold text-white mb-2 flex items-center gap-2">
+            <CornerDownRight className="w-5 h-5 text-[#0A84FF]" />
+            <span>Exemplary Structural Restructuring</span>
           </h3>
-          <p className="text-xs text-slate-400 mb-4">
-            How you can reframe this exact scenario for maximum executive clarity and impact:
+          <p className="text-xs text-[#98989D] mb-4">
+            How a senior candidate frames this exact scenario for executive clarity and impact:
           </p>
-          <div className="bg-slate-800/60 border border-slate-700/80 rounded-xl p-4 text-xs font-mono text-indigo-200 whitespace-pre-line leading-relaxed">
+          <div className="bg-[#1C1C1E] border border-white/[0.08] rounded-2xl p-4 sm:p-5 text-xs text-[#0A84FF]/90 whitespace-pre-line leading-relaxed font-mono">
             {coach.improved_answer_structure}
           </div>
         </div>
@@ -297,16 +335,16 @@ export default function FeedbackView({ evaluationData, onNextQuestion, onExit })
 
       {/* Interactive Personalized Follow-Up Practice */}
       {followUpQuestion && (
-        <div className="bg-gradient-to-br from-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 sm:p-8 shadow-xl">
-          <div className="flex items-center space-x-2 text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">
-            <RotateCcw className="w-4 h-4" />
-            <span>Targeted Follow-up Question</span>
+        <div className="bg-white/[0.04] border border-[#0A84FF]/30 rounded-3xl p-6 sm:p-8 shadow-apple-card backdrop-blur-2xl">
+          <div className="flex items-center space-x-2 text-xs font-semibold text-[#0A84FF] tracking-wide uppercase mb-2">
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Targeted Follow-Up Question</span>
           </div>
-          <h3 className="text-lg font-bold text-white mb-2">
+          <h3 className="text-base sm:text-lg font-semibold text-white mb-2 leading-snug">
             "{followUpQuestion}"
           </h3>
-          <p className="text-xs text-slate-400 mb-4">
-            The Coach Agent generated this follow-up directly from your answer to test unaddressed trade-offs and personal ownership.
+          <p className="text-xs text-[#98989D] mb-4">
+            Direct follow-up generated by the Coach Agent to probe unaddressed trade-offs and decision ownership.
           </p>
 
           {!followUpFeedback ? (
@@ -316,28 +354,30 @@ export default function FeedbackView({ evaluationData, onNextQuestion, onExit })
                 value={followUpAnswer}
                 onChange={(e) => setFollowUpAnswer(e.target.value)}
                 placeholder="Type your response to the follow-up question..."
-                className="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#1C1C1E] border border-white/[0.12] rounded-2xl p-3.5 text-white text-xs focus:outline-none focus:border-[#0A84FF] transition leading-relaxed"
               />
               <div className="flex justify-end">
                 <button
                   disabled={submittingFollowUp || !followUpAnswer.trim()}
                   onClick={handleFollowUpSubmit}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-md flex items-center space-x-1.5 transition disabled:opacity-50"
+                  className="bg-[#0A84FF] hover:bg-[#0071E3] active:scale-[0.98] text-white font-medium text-xs px-5 py-2 rounded-full shadow-apple-pill flex items-center space-x-1.5 transition disabled:opacity-50"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  <span>{submittingFollowUp ? "Evaluating..." : "Submit Follow-up"}</span>
+                  <span>{submittingFollowUp ? "Evaluating..." : "Submit Follow-Up"}</span>
                 </button>
               </div>
             </div>
           ) : (
-            <div className="bg-slate-800/80 p-4 rounded-xl border border-indigo-500/30 text-xs space-y-2">
+            <div className="bg-white/[0.04] p-4 rounded-2xl border border-[#0A84FF]/25 text-xs space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-emerald-400">Follow-up Evaluated Successfully</span>
+                <span className="font-semibold text-[#30D158] flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4" /> Follow-Up Evaluated
+                </span>
                 <span className="font-bold text-white">
                   Score: {Math.round(followUpFeedback.coaching_feedback?.overall_score || 80)}/100
                 </span>
               </div>
-              <p className="text-slate-300">
+              <p className="text-[#D1D1D6] leading-relaxed">
                 {followUpFeedback.coaching_feedback?.actionable_advice?.[0] || "Good refinement addressing the targeted gap."}
               </p>
             </div>
@@ -346,17 +386,17 @@ export default function FeedbackView({ evaluationData, onNextQuestion, onExit })
       )}
 
       {/* Action Footer */}
-      <div className="flex items-center justify-between pt-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/[0.08]">
         <button
           onClick={onExit}
-          className="text-xs font-semibold text-slate-400 hover:text-white px-4 py-2 rounded-xl transition"
+          className="text-xs font-medium text-[#98989D] hover:text-white px-4 py-2 rounded-full hover:bg-white/[0.06] transition"
         >
           Return to Mode Selection
         </button>
 
         <button
           onClick={onNextQuestion}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-lg shadow-indigo-600/30 flex items-center space-x-2 transition"
+          className="w-full sm:w-auto bg-[#0A84FF] hover:bg-[#0071E3] active:scale-[0.98] text-white font-medium text-xs sm:text-sm px-6 py-2.5 rounded-full shadow-apple-pill flex items-center justify-center space-x-2 transition"
         >
           <span>Practice Another Question</span>
           <ArrowRight className="w-4 h-4" />

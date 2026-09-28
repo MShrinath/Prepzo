@@ -56,7 +56,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-[#0A84FF] selection:text-white">
       <Navbar
         currentView={currentView}
         setView={setView}
@@ -101,8 +101,8 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t border-slate-900 py-6 text-center text-xs text-slate-500">
-        AI-Powered Communication & Interview Coaching System &bull; LangGraph Multi-Agent Architecture &bull; PostgreSQL &bull; Whisper
+      <footer className="border-t border-white/[0.06] py-6 px-4 text-center text-xs text-[#636366]">
+        Revv &bull; Intelligent Multi-Agent Interview Simulation &amp; Vocal Calibration
       </footer>
     </div>
   );
