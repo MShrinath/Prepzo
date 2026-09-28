@@ -1,0 +1,347 @@
+[
+  {
+    "question_id": "sde_perf_001",
+    "question": "How would you optimize a Python API endpoint that is experiencing high latency under heavy traffic?",
+    "mode": ["role_practice", "resume_jd"],
+    "role": "SDE",
+    "competency": "Problem Solving",
+    "difficulty": "medium",
+    "question_type": "technical",
+    "category": "Backend Performance",
+    "tags": ["python", "api", "latency", "optimization", "profiling"],
+    "expected_competencies": ["Technical Depth & Domain Mastery", "Problem Solving"],
+    "evaluation_criteria": [
+      "Mentions profiling before guessing (cProfile, py-spy, APM)",
+      "Identifies I/O bottlenecks vs CPU bottlenecks (asyncio, DB queries, N+1)",
+      "Discusses caching strategies (Redis, Memcached, HTTP caching)",
+      "Mentions database connection pooling and query indexing"
+    ],
+    "follow_up_template": "What specific metrics or profiling tools would you check first to confirm whether the bottleneck is CPU-bound or database I/O bound?"
+  },
+  {
+    "question_id": "sde_arch_002",
+    "question": "Describe how you would design a distributed rate limiter for a microservices architecture.",
+    "mode": ["role_practice"],
+    "role": "SDE",
+    "competency": "Technical Depth & Domain Mastery",
+    "difficulty": "hard",
+    "question_type": "technical",
+    "category": "System Design",
+    "tags": ["system design", "distributed systems", "rate limiting", "redis"],
+    "expected_competencies": ["Technical Depth & Domain Mastery", "Problem Solving"],
+    "evaluation_criteria": [
+      "Compares rate limiting algorithms (Token Bucket, Leaky Bucket, Sliding Window Counter)",
+      "Proposes centralized store like Redis with atomic scripts (Lua)",
+      "Discusses race conditions, concurrency, and network overhead",
+      "Handles failure modes (fail open vs fail closed)"
+    ],
+    "follow_up_template": "If the centralized Redis cluster becomes temporarily unavailable, how does your service handle incoming requests without causing a cascade failure?"
+  },
+  {
+    "question_id": "sde_beh_003",
+    "question": "Tell me about a time you identified a critical bug in production. How did you diagnose and resolve it under pressure?",
+    "mode": ["role_practice", "resume_jd"],
+    "role": "SDE",
+    "competency": "Ownership & Accountability",
+    "difficulty": "medium",
+    "question_type": "behavioral",
+    "category": "Incident Response",
+    "tags": ["incident", "production", "debugging", "ownership"],
+    "expected_competencies": ["Ownership & Accountability", "Communication & Clarity"],
+    "evaluation_criteria": [
+      "Structures answer clearly using STAR method",
+      "Clarifies candidate's personal contribution vs team",
+      "Describes systematic troubleshooting (logs, telemetry, rollbacks)",
+      "Mentions root cause analysis and preventative safeguards implemented"
+    ],
+    "follow_up_template": "What specific post-mortem safeguards or automated tests did you introduce to ensure this bug could never occur again?"
+  },
+  {
+    "question_id": "fullstack_state_001",
+    "question": "How do you manage client-side state in a large React application, and how do you prevent unnecessary re-renders?",
+    "mode": ["role_practice", "resume_jd"],
+    "role": "Full Stack Developer",
+    "competency": "Technical Depth & Domain Mastery",
+    "difficulty": "medium",
+    "question_type": "technical",
+    "category": "Frontend Architecture",
+    "tags": ["react", "state management", "performance", "rendering"],
+    "expected_competencies": ["Technical Depth & Domain Mastery", "Problem Solving"],
+    "evaluation_criteria": [
+      "Distinguishes server state (TanStack Query, SWR) vs global UI state (Zustand, Redux) vs local state",
+      "Explains memoization tools (useMemo, useCallback, React.memo) and when NOT to overuse them",
+      "Explains component tree colocation and context splitting"
+    ],
+    "follow_up_template": "In what specific scenarios would excessive use of useMemo or useCallback actually degrade rendering performance instead of helping?"
+  },
+  {
+    "question_id": "fullstack_sync_002",
+    "question": "Walk me through how you design an end-to-end feature requiring real-time updates between a backend service and a web dashboard.",
+    "mode": ["role_practice"],
+    "role": "Full Stack Developer",
+    "competency": "Problem Solving",
+    "difficulty": "medium",
+    "question_type": "technical",
+    "category": "Fullstack Architecture",
+    "tags": ["websocket", "sse", "realtime", "api"],
+    "expected_competencies": ["Technical Depth & Domain Mastery", "Problem Solving"],
+    "evaluation_criteria": [
+      "Compares WebSockets vs Server-Sent Events (SSE) vs Polling",
+      "Handles connection lifecycles, reconnection backoff, and heartbeat",
+      "Considers message ordering, payload serialization, and client rendering performance"
+    ],
+    "follow_up_template": "How would you handle authentication and reconnection token renewal if the candidate's session expires while the socket is open?"
+  },
+  {
+    "question_id": "aiml_eval_001",
+    "question": "How do you evaluate and mitigate hallucinations or inaccuracies in a Retrieval-Augmented Generation (RAG) pipeline?",
+    "mode": ["role_practice", "resume_jd"],
+    "role": "AI/ML Engineer",
+    "competency": "Technical Depth & Domain Mastery",
+    "difficulty": "hard",
+    "question_type": "technical",
+    "category": "GenAI & LLMs",
+    "tags": ["rag", "llm", "hallucination", "evals", "vector db"],
+    "expected_competencies": ["Technical Depth & Domain Mastery", "Problem Solving"],
+    "evaluation_criteria": [
+      "Discusses retrieval quality (precision, recall, reranking, chunking)",
+      "Explains evaluation frameworks (RAGAS, TruLens, GEval, groundedness)",
+      "Proposes guardrails, cite-checking, and strict system prompts"
+    ],
+    "follow_up_template": "If evaluation shows the retriever returned correct documents but the generator hallucinated anyway, what specific prompt engineering or temperature adjustments would you test?"
+  },
+  {
+    "question_id": "aiml_deploy_002",
+    "question": "Can you discuss a machine learning model you deployed to production that suffered from data drift or concept drift? How did you detect and remediate it?",
+    "mode": ["role_practice"],
+    "role": "AI/ML Engineer",
+    "competency": "Ownership & Accountability",
+    "difficulty": "medium",
+    "question_type": "behavioral",
+    "category": "MLOps",
+    "tags": ["drift", "monitoring", "mlops", "production"],
+    "expected_competencies": ["Technical Depth & Domain Mastery", "Ownership & Accountability"],
+    "evaluation_criteria": [
+      "Differentiates data drift (covariate shift) from concept drift",
+      "Mentions concrete monitoring metrics (KS-test, PSI, embedding distance)",
+      "Explains retraining triggers and fallback baseline models"
+    ],
+    "follow_up_template": "What was the measurable business impact or accuracy degradation before and after your automated retraining intervention?"
+  },
+  {
+    "question_id": "cloud_scale_001",
+    "question": "How would you design a multi-region disaster recovery architecture on AWS or Azure with an RPO of under 5 minutes and an RTO under 15 minutes?",
+    "mode": ["role_practice"],
+    "role": "Cloud Engineer",
+    "competency": "Technical Depth & Domain Mastery",
+    "difficulty": "hard",
+    "question_type": "technical",
+    "category": "Cloud Architecture",
+    "tags": ["aws", "azure", "disaster recovery", "rpo", "rto"],
+    "expected_competencies": ["Technical Depth & Domain Mastery", "Problem Solving"],
+    "evaluation_criteria": [
+      "Addresses database replication (Aurora Global Database, Cosmos DB active-active)",
+      "Discusses DNS routing and health checks (Route 53 latency/failover)",
+      "Evaluates cost vs resilience trade-offs between Pilot Light and Multi-Region Active-Active"
+    ],
+    "follow_up_template": "How would you prevent 'split-brain' scenarios where both regions attempt to write simultaneously during a temporary network partition?"
+  },
+  {
+    "question_id": "cloud_cost_002",
+    "question": "Tell me about a project where you reduced cloud infrastructure costs without hurting availability or performance.",
+    "mode": ["role_practice", "resume_jd"],
+    "role": "Cloud Engineer",
+    "competency": "Problem Solving",
+    "difficulty": "medium",
+    "question_type": "behavioral",
+    "category": "FinOps",
+    "tags": ["finops", "cost optimization", "aws", "autoscaling"],
+    "expected_competencies": ["Problem Solving", "Ownership & Accountability"],
+    "evaluation_criteria": [
+      "Provides quantifiable metrics (e.g. reduced spend by 35% or $15k/mo)",
+      "Explains technical levers used (Spot instances, ARM Graviton, right-sizing, storage tiers)",
+      "Verifies that SLA and latency metrics remained unaffected"
+    ],
+    "follow_up_template": "What specific percentage or dollar amount of savings did you deliver, and what telemetry did you monitor to verify latency didn't spike?"
+  },
+  {
+    "question_id": "devops_cicd_001",
+    "question": "How do you design a zero-downtime CI/CD deployment pipeline for containerized services using Kubernetes?",
+    "mode": ["role_practice", "resume_jd"],
+    "role": "DevOps Engineer",
+    "competency": "Technical Depth & Domain Mastery",
+    "difficulty": "medium",
+    "question_type": "technical",
+    "category": "CI/CD & Kubernetes",
+    "tags": ["kubernetes", "cicd", "blue-green", "canary", "argo"],
+    "expected_competencies": ["Technical Depth & Domain Mastery", "Problem Solving"],
+    "evaluation_criteria": [
+      "Compares deployment strategies (Rolling updates, Blue-Green, Canary)",
+      "Mentions readiness and liveness probes and graceful termination (preStop hooks)",
+      "Discusses automated rollback triggers based on error rate or latency metrics"
+    ],
+    "follow_up_template": "If a canary release triggers a 5% spike in HTTP 500 errors, how does your pipeline automatically halt traffic and roll back without manual intervention?"
+  },
+  {
+    "question_id": "data_pipeline_001",
+    "question": "You notice that an analytical data warehouse ETL pipeline has slowed down from 30 minutes to 4 hours over the past two months. How do you investigate and fix it?",
+    "mode": ["role_practice"],
+    "role": "Data Analyst",
+    "competency": "Problem Solving",
+    "difficulty": "medium",
+    "question_type": "technical",
+    "category": "Data Engineering & Analytics",
+    "tags": ["sql", "etl", "data warehouse", "optimization"],
+    "expected_competencies": ["Problem Solving", "Technical Depth & Domain Mastery"],
+    "evaluation_criteria": [
+      "Analyzes query execution plans, partition pruning, and table scans",
+      "Inspects data skew, shuffle operations, and unindexed joins",
+      "Suggests incremental loading or CDC (Change Data Capture) instead of full table scans"
+    ],
+    "follow_up_template": "What exact query profiling command or execution plan node pointed to the primary bottleneck?"
+  },
+  {
+    "question_id": "pm_prioritize_001",
+    "question": "How do you decide what feature to build when your engineering team wants to refactor technical debt, sales wants an enterprise feature, and customer support wants bug fixes?",
+    "mode": ["role_practice"],
+    "role": "Product Manager",
+    "competency": "Teamwork & Conflict Resolution",
+    "difficulty": "medium",
+    "question_type": "situational",
+    "category": "Product Strategy",
+    "tags": ["prioritization", "stakeholder management", "roadmap", "tradeoffs"],
+    "expected_competencies": ["Teamwork & Conflict Resolution", "Communication & Clarity"],
+    "evaluation_criteria": [
+      "Applies objective prioritization frameworks (RICE, Cost of Delay, Kano)",
+      "Quantifies business impact (revenue risk, churn reduction, engineering velocity)",
+      "Communicates rationale transparently to all stakeholders to maintain alignment"
+    ],
+    "follow_up_template": "When you decided not to build the sales team's requested feature, how did you deliver the news to keep their trust?"
+  },
+  {
+    "question_id": "sales_objection_001",
+    "question": "A prospective enterprise buyer says: 'Your product is 40% more expensive than your competitor, and they already offer the same core features.' How do you respond?",
+    "mode": ["role_practice"],
+    "role": "Sales",
+    "competency": "Communication & Clarity",
+    "difficulty": "medium",
+    "question_type": "situational",
+    "category": "Objection Handling",
+    "tags": ["sales", "negotiation", "value proposition", "objection"],
+    "expected_competencies": ["Communication & Clarity", "Problem Solving"],
+    "evaluation_criteria": [
+      "Acknowledges and reframes the objection rather than getting defensive",
+      "Pivots to Total Cost of Ownership (TCO), ROI, and reliability vs sticker price",
+      "Asks discovery questions to uncover the prospect's critical pain points"
+    ],
+    "follow_up_template": "What specific clarifying question would you ask the prospect before presenting your pricing justification?"
+  },
+  {
+    "question_id": "cs_escalation_001",
+    "question": "A tier-1 customer contacts you furious because an outage interrupted their critical workflow during month-end close. How do you handle the communication and retain their partnership?",
+    "mode": ["role_practice"],
+    "role": "Customer Success",
+    "competency": "Teamwork & Conflict Resolution",
+    "difficulty": "medium",
+    "question_type": "situational",
+    "category": "Customer Escalations",
+    "tags": ["customer success", "retention", "escalation", "empathy"],
+    "expected_competencies": ["Teamwork & Conflict Resolution", "Communication & Clarity"],
+    "evaluation_criteria": [
+      "Demonstrates radical empathy, de-escalation, and active listening",
+      "Provides transparent operational updates without technical excuses",
+      "Follows up with a comprehensive corrective action plan and service credits"
+    ],
+    "follow_up_template": "What immediate assurance and what long-term prevention plan did you offer to prevent them from terminating their contract?"
+  },
+  {
+    "question_id": "hr_conflict_001",
+    "question": "Tell me about a time you had a strong disagreement with a teammate or lead regarding a project direction. How did you handle it, and what was the outcome?",
+    "mode": ["hr", "role_practice"],
+    "role": "HR",
+    "competency": "Teamwork & Conflict Resolution",
+    "difficulty": "medium",
+    "question_type": "behavioral",
+    "category": "Conflict Resolution",
+    "tags": ["conflict", "teamwork", "disagreement", "interpersonal"],
+    "expected_competencies": ["Teamwork & Conflict Resolution", "Communication & Clarity"],
+    "evaluation_criteria": [
+      "Follows STAR framework with clear personal actions",
+      "Demonstrates focus on objective facts, data, or user needs rather than ego",
+      "Highlights respectful listening and constructive resolution or 'disagree and commit'"
+    ],
+    "follow_up_template": "If you had to do it over again, what would you do differently to reach consensus even faster?"
+  },
+  {
+    "question_id": "hr_feedback_002",
+    "question": "Describe a situation where you received difficult, unexpected constructive feedback from a manager or peer. How did you react and what changes did you make?",
+    "mode": ["hr"],
+    "role": "HR",
+    "competency": "Adaptability & Resilience",
+    "difficulty": "medium",
+    "question_type": "behavioral",
+    "category": "Receiving Feedback",
+    "tags": ["feedback", "growth mindset", "resilience", "adaptability"],
+    "expected_competencies": ["Adaptability & Resilience", "Ownership & Accountability"],
+    "evaluation_criteria": [
+      "Shows lack of defensiveness and genuine openness to critique",
+      "Explains actionable steps taken to address the gap",
+      "Demonstrates verified improvement over time"
+    ],
+    "follow_up_template": "How did you verify with your manager that your corrective actions had fully satisfied their expectations?"
+  },
+  {
+    "question_id": "hr_stress_003",
+    "question": "Tell me about a time when you were facing multiple high-priority deadlines simultaneously with conflicting demands. How did you prioritize and deliver?",
+    "mode": ["hr"],
+    "role": "HR",
+    "competency": "Problem Solving",
+    "difficulty": "medium",
+    "question_type": "behavioral",
+    "category": "Stress Management",
+    "tags": ["stress management", "prioritization", "deadlines", "workload"],
+    "expected_competencies": ["Problem Solving", "Communication & Clarity"],
+    "evaluation_criteria": [
+      "Explains clear triage criteria (business urgency, impact, dependencies)",
+      "Shows proactive communication with stakeholders to reset expectations early",
+      "Delivers core commitments without burning out or sacrificing quality"
+    ],
+    "follow_up_template": "How did you manage the expectations of the stakeholder whose deadline had to be postponed?"
+  },
+  {
+    "question_id": "hr_motivation_004",
+    "question": "Why are you interested in pursuing this career path at this stage of your professional journey, and what environments enable you to do your best work?",
+    "mode": ["hr"],
+    "role": "HR",
+    "competency": "Communication & Clarity",
+    "difficulty": "easy",
+    "question_type": "behavioral",
+    "category": "Motivation & Culture",
+    "tags": ["motivation", "career goals", "culture fit", "self-awareness"],
+    "expected_competencies": ["Communication & Clarity", "Ownership & Accountability"],
+    "evaluation_criteria": [
+      "Articulates authentic career vision and intrinsic motivators",
+      "Connects personal growth aspirations with tangible professional contributions",
+      "Demonstrates realistic understanding of team collaboration dynamics"
+    ],
+    "follow_up_template": "What specific project or achievement in your past gave you the greatest sense of purpose and why?"
+  },
+  {
+    "question_id": "hr_failure_005",
+    "question": "Can you share an example of a project or task you took on that completely failed or did not meet expectations? What was your role in that failure and what did you learn?",
+    "mode": ["hr"],
+    "role": "HR",
+    "competency": "Ownership & Accountability",
+    "difficulty": "hard",
+    "question_type": "behavioral",
+    "category": "Handling Failure",
+    "tags": ["failure", "ownership", "post-mortem", "growth"],
+    "expected_competencies": ["Ownership & Accountability", "Adaptability & Resilience"],
+    "evaluation_criteria": [
+      "Takes transparent personal ownership without deflecting blame to teammates or tools",
+      "Analyzes root causes with genuine self-reflection",
+      "Shares concrete behavior changes and subsequent successes"
+    ],
+    "follow_up_template": "In your next project, what specific early warning signs did you look out for to avoid repeating that mistake?"
+  }
+]

@@ -1,0 +1,76 @@
+{
+  "competencies": [
+    {
+      "id": "comp_problem_solving",
+      "name": "Problem Solving",
+      "category": "Cognitive",
+      "description": "Ability to analyze complex problems, decompose them into manageable components, and formulate effective, scalable solutions.",
+      "rubric": {
+        "1-3": "Struggles to isolate the root cause, offers superficial solutions without considering trade-offs.",
+        "4-6": "Identifies the core problem, proposes viable solutions with basic reasoning, acknowledges some edge cases.",
+        "7-8": "Deconstructs problems methodically, evaluates multiple architectural/algorithmic trade-offs, anticipates failure modes.",
+        "9-10": "Demonstrates exceptional systematic thinking, designs robust, elegant solutions under tight constraints with quantitative justifications."
+      }
+    },
+    {
+      "id": "comp_communication",
+      "name": "Communication & Clarity",
+      "category": "Interpersonal",
+      "description": "Ability to articulate technical concepts, decisions, and narratives clearly, concisely, and coherently to diverse audiences.",
+      "rubric": {
+        "1-3": "Rambles, uses excessive filler words, loses track of the question, fails to structure thoughts.",
+        "4-6": "Answers the prompt clearly with minor tangents, reasonable vocabulary, understandable structure.",
+        "7-8": "Succinct, well-organized (Situation-Task-Action-Result or top-down), precise terminology, highly engaging.",
+        "9-10": "Masterful storytelling and clarity, tailors explanations dynamically, zero unnecessary fluff, compelling flow."
+      }
+    },
+    {
+      "id": "comp_technical_knowledge",
+      "name": "Technical Depth & Domain Mastery",
+      "category": "Technical",
+      "description": "Thorough understanding of relevant technologies, architecture, design patterns, protocols, and best practices.",
+      "rubric": {
+        "1-3": "Lacks fundamental domain knowledge, provides incorrect technical explanations or buzzword soup.",
+        "4-6": "Understands core concepts, uses standard frameworks correctly, explains common patterns.",
+        "7-8": "Deep understanding of internal mechanisms, concurrency, memory, optimization, and system design.",
+        "9-10": "Recognized expert depth, cites real-world production performance trade-offs, internal runtimes, and distributed limits."
+      }
+    },
+    {
+      "id": "comp_ownership",
+      "name": "Ownership & Accountability",
+      "category": "Behavioral",
+      "description": "Demonstrating personal initiative, responsibility for outcomes, and commitment beyond strictly assigned duties.",
+      "rubric": {
+        "1-3": "Blames others, speaks exclusively in vague 'we' terms without clarifying personal role, avoids responsibility.",
+        "4-6": "Explains assigned tasks and deliverables clearly, accepts responsibility for own work.",
+        "7-8": "Takes proactive steps before being asked, unblocks teammates, follows through to final post-mortem.",
+        "9-10": "Drives organizational change, advocates for users and code health, takes total ownership in crises."
+      }
+    },
+    {
+      "id": "comp_collaboration",
+      "name": "Teamwork & Conflict Resolution",
+      "category": "Behavioral",
+      "description": "Collaborating effectively with cross-functional partners, resolving technical disagreements constructively, and supporting team goals.",
+      "rubric": {
+        "1-3": "Defensive, dismissive of other perspectives, escalates prematurely, creates team friction.",
+        "4-6": "Cooperates with teammates, listens to counterarguments, reaches compromise through discussion.",
+        "7-8": "De-escalates friction objectively using data, builds consensus across stakeholders, mentors junior colleagues.",
+        "9-10": "Fosters high psychological safety, elevates entire team standards, navigates complex organizational politics seamlessly."
+      }
+    },
+    {
+      "id": "comp_adaptability",
+      "name": "Adaptability & Resilience",
+      "category": "Behavioral",
+      "description": "Handling shifting requirements, recovering from failures, embracing feedback, and learning rapidly in ambiguous environments.",
+      "rubric": {
+        "1-3": "Resists change, freezes under ambiguity, becomes defensive when given critical feedback.",
+        "4-6": "Adjusts to plan changes with minor guidance, acknowledges mistakes, incorporates feedback.",
+        "7-8": "Thrives in ambiguous environments, pivots quickly with minimal context, turns failures into post-mortem lessons.",
+        "9-10": "Inspires calm and direction during rapid change, masters brand-new domains overnight, seeks out tough feedback."
+      }
+    }
+  ]
+}
