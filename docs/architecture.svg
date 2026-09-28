@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 820" width="100%" height="100%" style="background-color: #0b1120; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <linearGradient id="grad-indigo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#4338ca" />
+    </linearGradient>
+    <linearGradient id="grad-emerald" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="grad-amber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="550" y="45" text-anchor="middle" fill="#f8fafc" font-size="24" font-weight="800" letter-spacing="0.5">AI Communication &amp; Interview Coaching System</text>
+  <text x="550" y="70" text-anchor="middle" fill="#94a3b8" font-size="14">LangGraph Multi-Agent Architecture with 3-Mode Routing &amp; Evidence-Based Feedback</text>
+
+  <!-- Candidate Layer -->
+  <rect x="425" y="105" width="250" height="60" rx="12" fill="#1e293b" stroke="#334155" stroke-width="2" filter="url(#shadow)" />
+  <text x="550" y="132" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="700">CANDIDATE INTERFACE</text>
+  <text x="550" y="152" text-anchor="middle" fill="#f8fafc" font-size="14">React + Vite Web App (Voice &amp; Text)</text>
+
+  <!-- Arrow Down -->
+  <path d="M 550 165 L 550 205" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- FastAPI Gateway -->
+  <rect x="375" y="205" width="350" height="50" rx="10" fill="#1e293b" stroke="#6366f1" stroke-width="2" filter="url(#shadow)" />
+  <text x="550" y="235" text-anchor="middle" fill="#f8fafc" font-size="15" font-weight="700">FastAPI REST Services &amp; Whisper STT Engine</text>
+
+  <!-- Mode Split Box -->
+  <rect x="60" y="295" width="980" height="100" rx="16" fill="#131e32" stroke="#334155" stroke-width="1.5" />
+  <text x="80" y="325" fill="#94a3b8" font-size="12" font-weight="700" letter-spacing="1">INTERVIEW ENTRY MODES</text>
+
+  <!-- Mode 1 -->
+  <rect x="80" y="335" width="280" height="45" rx="8" fill="url(#grad-indigo)" filter="url(#shadow)" />
+  <text x="220" y="362" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">Mode 1: Role Practice (9 Roles)</text>
+
+  <!-- Mode 2 -->
+  <rect x="410" y="335" width="280" height="45" rx="8" fill="url(#grad-emerald)" filter="url(#shadow)" />
+  <text x="550" y="362" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">Mode 2: Resume + JD Gap Analysis</text>
+
+  <!-- Mode 3 -->
+  <rect x="740" y="335" width="280" height="45" rx="8" fill="url(#grad-amber)" filter="url(#shadow)" />
+  <text x="880" y="362" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">Mode 3: HR Behavioral Round</text>
+
+  <!-- LangGraph Orchestration Layer -->
+  <rect x="60" y="435" width="980" height="230" rx="16" fill="#0f172a" stroke="#6366f1" stroke-width="2" filter="url(#shadow)" />
+  <text x="90" y="465" fill="#818cf8" font-size="14" font-weight="800">LANGGRAPH MULTI-AGENT STATE MACHINE (Shared InterviewState)</text>
+
+  <!-- Agents -->
+  <!-- Question Agent -->
+  <rect x="80" y="485" width="165" height="85" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" />
+  <text x="162" y="515" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="700">Question Agent</text>
+  <text x="162" y="535" text-anchor="middle" fill="#94a3b8" font-size="11">Adaptive Filtering</text>
+  <text x="162" y="552" text-anchor="middle" fill="#94a3b8" font-size="11">&amp; Resume Grounding</text>
+
+  <!-- Comm Agent -->
+  <rect x="270" y="485" width="165" height="85" rx="10" fill="#1e293b" stroke="#818cf8" stroke-width="1.5" />
+  <text x="352" y="515" text-anchor="middle" fill="#818cf8" font-size="13" font-weight="700">Communication</text>
+  <text x="352" y="535" text-anchor="middle" fill="#94a3b8" font-size="11">Clarity &amp; Conciseness</text>
+  <text x="352" y="552" text-anchor="middle" fill="#94a3b8" font-size="11">Filler Words &amp; Delivery</text>
+
+  <!-- Content Agent -->
+  <rect x="460" y="485" width="165" height="85" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1.5" />
+  <text x="542" y="515" text-anchor="middle" fill="#34d399" font-size="13" font-weight="700">Content Agent</text>
+  <text x="542" y="535" text-anchor="middle" fill="#94a3b8" font-size="11">Relevance &amp; Accuracy</text>
+  <text x="542" y="552" text-anchor="middle" fill="#94a3b8" font-size="11">Technical Depth</text>
+
+  <!-- STAR Agent -->
+  <rect x="650" y="485" width="165" height="85" rx="10" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5" />
+  <text x="732" y="515" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="700">STAR Agent</text>
+  <text x="732" y="535" text-anchor="middle" fill="#94a3b8" font-size="11">Situation / Task</text>
+  <text x="732" y="552" text-anchor="middle" fill="#94a3b8" font-size="11">Action / Result Evidence</text>
+
+  <!-- Merger / Router -->
+  <polygon points="850,527 890,497 930,527 890,557" fill="#334155" stroke="#94a3b8" stroke-width="1.5" />
+  <text x="890" y="532" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="700">Router</text>
+
+  <!-- Coach Agent (Full Synthesis) -->
+  <rect x="250" y="595" width="600" height="55" rx="10" fill="url(#grad-indigo)" stroke="#a5b4fc" stroke-width="2" filter="url(#shadow)" />
+  <text x="550" y="622" text-anchor="middle" fill="#ffffff" font-size="15" font-weight="800">Coach Agent (Synthesis, Actionable Advice, Follow-up Question)</text>
+  <text x="550" y="640" text-anchor="middle" fill="#e0e7ff" font-size="11">Resolves Contradictions &bull; Generates 7-Day Plan &bull; Detects Recurring Weaknesses</text>
+
+  <!-- Persistence & Output Layer -->
+  <rect x="60" y="695" width="980" height="95" rx="16" fill="#131e32" stroke="#334155" stroke-width="1.5" />
+  <text x="90" y="725" fill="#94a3b8" font-size="12" font-weight="700" letter-spacing="1">PERSISTENCE &amp; DASHBOARD ANALYTICS</text>
+
+  <rect x="80" y="735" width="210" height="40" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+  <text x="185" y="760" text-anchor="middle" fill="#f8fafc" font-size="12">PostgreSQL / SQLite</text>
+
+  <rect x="315" y="735" width="210" height="40" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+  <text x="420" y="760" text-anchor="middle" fill="#f8fafc" font-size="12">Recurring Gaps Index</text>
+
+  <rect x="550" y="735" width="210" height="40" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+  <text x="655" y="760" text-anchor="middle" fill="#f8fafc" font-size="12">Personalized 7-Day Plan</text>
+
+  <rect x="785" y="735" width="235" height="40" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1" />
+  <text x="902" y="760" text-anchor="middle" fill="#f8fafc" font-size="12">Recharts Longitudinal Analytics</text>
+</svg>
