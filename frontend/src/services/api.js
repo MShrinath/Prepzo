@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 export async function fetchRoles() {
   const res = await fetch(`${BASE_URL}/api/interview-modes/role-practice/roles`);

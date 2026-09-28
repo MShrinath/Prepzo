@@ -26,7 +26,8 @@ class Settings(BaseSettings):
     whisper_provider: str = Field(default="mock", alias="WHISPER_PROVIDER")
     whisper_model: str = Field(default="whisper-1", alias="WHISPER_MODEL")
 
-    # CORS
+    # CORS & Frontend URL
+    frontend_url: Optional[str] = Field(default=None, alias="FRONTEND_URL")
     cors_origins: str = Field(
         default="http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000",
         alias="CORS_ORIGINS",
@@ -47,7 +48,10 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> List[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        origins = [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        if self.frontend_url and self.frontend_url.strip() not in origins:
+            origins.append(self.frontend_url.strip())
+        return origins
 
 
 settings = Settings()
