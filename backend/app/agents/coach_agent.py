@@ -12,6 +12,19 @@ from app.schemas.agent_evaluations import (
 )
 
 
+def is_trivial_response(text: str) -> bool:
+    clean = text.strip().lower()
+    words = clean.split()
+    if len(words) < 5:
+        return True
+    if clean in [
+        "hi", "hello", "hey", "test", "ok", "okay", "yes", "no", "idk",
+        "i don't know", "i dont know", "skip", "pass", "good", "fine", "nothing"
+    ]:
+        return True
+    return False
+
+
 class CoachAgent:
     def __init__(self):
         self.llm = get_llm(temperature=0.2)
@@ -26,6 +39,31 @@ class CoachAgent:
         candidate_profile: Optional[Dict[str, Any]] = None,
         session_history: Optional[List[Dict[str, Any]]] = None,
     ) -> CoachFeedbackOutput:
+        if is_trivial_response(response_text):
+            return CoachFeedbackOutput(
+                overall_score=15.0,
+                strengths=[],
+                improvement_areas=[
+                    "Provide a substantive, structured answer addressing the question directly.",
+                    "Include concrete technical tools, methodology, or personal experiences.",
+                ],
+                evidence_items=[
+                    EvidenceItem(
+                        issue="Minimal Non-Answer",
+                        severity="high",
+                        evidence=f"Candidate response: '{response_text.strip()}'",
+                        recommendation="Avoid single-word greetings or placeholder submissions. Take 15-30 seconds to formulate a structured technical or behavioral response.",
+                    )
+                ],
+                actionable_advice=[
+                    "Take a moment to read and break down the question before answering.",
+                    "For technical questions: define the problem scope, describe your solution architecture, and explain trade-offs.",
+                    "For behavioral questions: use Situation, Task, Action, and Result (STAR).",
+                ],
+                improved_answer_structure=f"For '{question}', begin with a clear opening statement, elaborate on the technical approach or specific actions you took, and conclude with measurable impact.",
+                follow_up_question=f"Could you elaborate on your experience regarding: {question}?",
+            )
+
         # Calculate balanced score (Relevance: 25%, Content quality: 25%, Communication: 20%, Structure: 15%, Completeness: 15%)
         # All incoming scores are 1-10
         comm_score = (communication.clarity + communication.conciseness + communication.structure + communication.communication_quality) / 4.0

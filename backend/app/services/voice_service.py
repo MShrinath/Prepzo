@@ -70,6 +70,10 @@ class VoiceService:
 
         # If OpenAI Whisper API is configured
         if provider == "openai" and settings.openai_api_key:
+            if not file_bytes or len(file_bytes) < 500:
+                logger.warning("Uploaded audio is empty or too short for transcription.")
+                return ""
+
             try:
                 from openai import OpenAI
                 client_kwargs = {"api_key": settings.openai_api_key}
@@ -77,18 +81,22 @@ class VoiceService:
                     client_kwargs["base_url"] = settings.openai_base_url.strip()
                 client = OpenAI(**client_kwargs)
                 audio_file = io.BytesIO(file_bytes)
-                audio_file.name = filename
+                audio_file.name = filename if "." in filename else f"{filename}.wav"
                 transcription = client.audio.transcriptions.create(
                     model=settings.whisper_model or "whisper-1",
                     file=audio_file,
                 )
-                return transcription.text
+                return (transcription.text or "").strip()
             except Exception as e:
-                logger.warning(f"Whisper API call failed: {e}. Falling back to default mock transcription.")
+                logger.warning(f"Whisper API call failed or no speech detected: {e}.")
+                return ""
 
-        # Default mock transcript for offline practice and automated testing
-        return (
-            "In my previous project, I identified an architectural bottleneck where the API latency spiked to 900ms. "
-            "I used profiling tools to trace the root cause to redundant database queries. "
-            "I personally implemented Redis caching and query batching, which reduced the latency by 45% and handled 3000 RPS."
-        )
+        # Default mock transcript ONLY for offline practice and automated testing
+        if provider == "mock":
+            return (
+                "In my previous project, I identified an architectural bottleneck where the API latency spiked to 900ms. "
+                "I used profiling tools to trace the root cause to redundant database queries. "
+                "I personally implemented Redis caching and query batching, which reduced the latency by 45% and handled 3000 RPS."
+            )
+
+        return ""

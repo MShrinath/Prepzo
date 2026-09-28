@@ -296,6 +296,9 @@ def submit_text_response(session_id: str, req: TextResponseSubmitRequest, db: Se
     if not session:
         raise HTTPException(status_code=404, detail="Interview session not found")
 
+    if not req.response or not req.response.strip():
+        raise HTTPException(status_code=400, detail="Response text cannot be empty.")
+
     candidate = session.candidate
     candidate_dict = candidate.to_dict() if candidate else {}
 
@@ -452,6 +455,12 @@ async def submit_voice_response(
     # Read audio bytes
     audio_bytes = await audio_file.read()
     transcript, audio_metrics = VoiceService.process_audio(audio_bytes, audio_file.filename)
+
+    if not transcript or not transcript.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="No speech was detected in your recording. Please ensure your microphone is enabled, speak clearly, and try recording again."
+        )
 
     candidate = session.candidate
     candidate_dict = candidate.to_dict() if candidate else {}

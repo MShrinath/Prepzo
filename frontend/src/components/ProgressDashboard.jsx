@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, BarChart, Bar
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
 } from 'recharts';
-import { BarChart3, TrendingUp, AlertTriangle, Calendar, Award, CheckCircle2, RefreshCw } from 'lucide-react';
-import { fetchCandidateProgress, fetchRecurringGaps, fetchImprovementPlan } from '../services/api';
+import { BarChart3, TrendingUp, AlertTriangle, Calendar, Award, CheckCircle2, RefreshCw, Trash2 } from 'lucide-react';
+import { fetchCandidateProgress, fetchRecurringGaps, fetchImprovementPlan, clearCandidateSessions } from '../services/api';
 
 export default function ProgressDashboard({ candidate }) {
   const [progressData, setProgressData] = useState(null);
@@ -31,6 +31,18 @@ export default function ProgressDashboard({ candidate }) {
     }
   };
 
+  const handleResetHistory = async () => {
+    if (!window.confirm("Are you sure you want to clear your practice session history? This will start your analytics with a completely clean slate.")) {
+      return;
+    }
+    try {
+      await clearCandidateSessions(candidateId);
+      await loadDashboardData();
+    } catch (err) {
+      alert("Failed to reset session history: " + err.message);
+    }
+  };
+
   useEffect(() => {
     loadDashboardData();
   }, [candidateId]);
@@ -45,11 +57,10 @@ export default function ProgressDashboard({ candidate }) {
   }
 
   const timeline = progressData?.timeline || [];
-  const chartData = timeline.length > 0 ? timeline : [
-    { date: 'Session 1', overall_score: 65, communication: 60, content: 70, structure: 58 },
-    { date: 'Session 2', overall_score: 72, communication: 68, content: 74, structure: 65 },
-    { date: 'Session 3', overall_score: 84, communication: 82, content: 86, structure: 80 },
-  ];
+  const totalSessions = progressData?.total_sessions || timeline.length || 0;
+  const avgOverall = totalSessions > 0 ? (progressData?.average_overall_score ?? 0) : null;
+  const avgComm = totalSessions > 0 ? (progressData?.average_communication_score ?? 0) : null;
+  const avgContent = totalSessions > 0 ? (progressData?.average_content_score ?? 0) : null;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
@@ -60,17 +71,30 @@ export default function ProgressDashboard({ candidate }) {
             Performance Analytics & Growth
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Tracking longitudinal score progression, recurring weaknesses, and daily practice plans for {progressData?.candidate_name}.
+            Tracking longitudinal score progression, recurring weaknesses, and daily practice plans for {progressData?.candidate_name || candidate?.name || 'Candidate'}.
           </p>
         </div>
 
-        <button
-          onClick={loadDashboardData}
-          className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center space-x-1.5 transition"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Refresh Data</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {totalSessions > 0 && (
+            <button
+              onClick={handleResetHistory}
+              className="text-xs px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center space-x-1.5 transition"
+              title="Clear all past sessions to start fresh"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Reset History</span>
+            </button>
+          )}
+
+          <button
+            onClick={loadDashboardData}
+            className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center space-x-1.5 transition"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh Data</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Metric Cards */}
@@ -80,7 +104,7 @@ export default function ProgressDashboard({ candidate }) {
             Total Sessions
           </span>
           <div className="text-3xl font-black text-white">
-            {progressData?.total_sessions || timeline.length}
+            {totalSessions}
           </div>
           <span className="text-[11px] text-slate-500">Practice rounds</span>
         </div>
@@ -90,10 +114,14 @@ export default function ProgressDashboard({ candidate }) {
             Avg Overall Score
           </span>
           <div className="text-3xl font-black text-indigo-400">
-            {progressData?.average_overall_score || 74}<span className="text-sm text-slate-500 font-normal">/100</span>
+            {avgOverall !== null ? (
+              <>{avgOverall}<span className="text-sm text-slate-500 font-normal">/100</span></>
+            ) : (
+              <span className="text-slate-600 text-2xl font-bold">--</span>
+            )}
           </div>
-          <span className="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
-            <TrendingUp className="w-3 h-3" /> +9% over time
+          <span className="text-[11px] text-slate-500">
+            {totalSessions > 0 ? "Cumulative avg" : "No sessions yet"}
           </span>
         </div>
 
@@ -102,7 +130,11 @@ export default function ProgressDashboard({ candidate }) {
             Communication
           </span>
           <div className="text-3xl font-black text-white">
-            {progressData?.average_communication_score || 72}<span className="text-sm text-slate-500 font-normal">/100</span>
+            {avgComm !== null ? (
+              <>{avgComm}<span className="text-sm text-slate-500 font-normal">/100</span></>
+            ) : (
+              <span className="text-slate-600 text-2xl font-bold">--</span>
+            )}
           </div>
           <span className="text-[11px] text-slate-500">Clarity & cadence</span>
         </div>
@@ -112,7 +144,11 @@ export default function ProgressDashboard({ candidate }) {
             Content Mastery
           </span>
           <div className="text-3xl font-black text-emerald-400">
-            {progressData?.average_content_score || 76}<span className="text-sm text-slate-500 font-normal">/100</span>
+            {avgContent !== null ? (
+              <>{avgContent}<span className="text-sm text-slate-500 font-normal">/100</span></>
+            ) : (
+              <span className="text-slate-600 text-2xl font-bold">--</span>
+            )}
           </div>
           <span className="text-[11px] text-slate-500">Technical depth</span>
         </div>
@@ -128,22 +164,32 @@ export default function ProgressDashboard({ candidate }) {
           Comparing Overall Score, Communication Clarity, and Technical Content Depth over time.
         </p>
 
-        <div className="h-72 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
-              <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={11} />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '12px' }}
-              />
-              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-              <Line type="monotone" dataKey="overall_score" name="Overall Score" stroke="#6366f1" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-              <Line type="monotone" dataKey="communication" name="Communication" stroke="#38bdf8" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="content" name="Content Quality" stroke="#34d399" strokeWidth={2} dot={{ r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        {timeline.length > 0 ? (
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={timeline} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
+                <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={11} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '12px' }}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Line type="monotone" dataKey="overall_score" name="Overall Score" stroke="#6366f1" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="communication" name="Communication" stroke="#38bdf8" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="content" name="Content Quality" stroke="#34d399" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="py-16 text-center border border-dashed border-slate-800 rounded-xl bg-slate-950/40">
+            <BarChart3 className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+            <h4 className="text-sm font-semibold text-slate-300">No practice sessions completed yet</h4>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+              Start practicing with Role Practice, Resume Match, or HR Round to build your longitudinal performance graph.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Grid: Recurring Gaps & 7-Day Improvement Plan */}

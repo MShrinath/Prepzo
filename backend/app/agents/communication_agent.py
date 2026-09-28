@@ -9,6 +9,19 @@ FILLER_WORDS = [
 ]
 
 
+def is_trivial_response(text: str) -> bool:
+    clean = text.strip().lower()
+    words = clean.split()
+    if len(words) < 5:
+        return True
+    if clean in [
+        "hi", "hello", "hey", "test", "ok", "okay", "yes", "no", "idk",
+        "i don't know", "i dont know", "skip", "pass", "good", "fine", "nothing"
+    ]:
+        return True
+    return False
+
+
 class CommunicationAgent:
     def __init__(self):
         self.llm = get_llm(temperature=0.1)
@@ -19,6 +32,20 @@ class CommunicationAgent:
         response_text: str,
         audio_metrics: Optional[Dict[str, Any]] = None
     ) -> CommunicationEvaluationOutput:
+        # Check for non-answers or trivial greetings
+        if is_trivial_response(response_text):
+            return CommunicationEvaluationOutput(
+                clarity=1,
+                conciseness=1,
+                structure=1,
+                communication_quality=1,
+                filler_words=0,
+                strengths=[],
+                weaknesses=["Candidate provided a minimal greeting or non-answer rather than answering the interview question."],
+                evidence=[f"Candidate answer was only: '{response_text.strip()}'"],
+                audio_metrics=audio_metrics or {},
+            )
+
         # 1. Rule-based metrics
         words = re.findall(r"\w+", response_text.lower())
         word_count = len(words)
@@ -35,6 +62,13 @@ class CommunicationAgent:
         prompt = f"""You are the Communication Analysis Agent.
 Your responsibility is to objectively evaluate the candidate's communication quality, articulation, and clarity.
 Do NOT evaluate candidate personality, psychology, or intelligence.
+
+CRITICAL SCORING RULE:
+If the candidate's response is an empty submission, greeting ('hi', 'hello'), off-topic evasion, or under 5 words without technical content:
+- Set clarity: 1, conciseness: 1, structure: 1, communication_quality: 1.
+- strengths MUST be an empty array [].
+- weaknesses MUST state: "Candidate provided only a greeting or non-answer instead of answering the interview question."
+- Do NOT hallucinate strengths or praise low-effort greetings.
 
 Question asked: "{question}"
 Candidate's response:

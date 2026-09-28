@@ -61,30 +61,37 @@ export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluat
       setIsRecording(true);
       setRecordingTime(0);
     } catch (err) {
-      console.warn("Microphone access failed or simulated:", err);
-      // Fallback: create mock voice audio blob for environments without mic permissions
-      setIsRecording(true);
-      setRecordingTime(0);
+      console.warn("Microphone access failed:", err);
+      setError("Microphone access was denied or is not available. Please allow microphone access in your browser permissions or switch to Text Response mode above.");
+      setIsRecording(false);
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop();
-    } else {
-      // Mock blob fallback
-      const mockWav = new Blob(["mock audio data"], { type: 'audio/wav' });
-      setAudioBlob(mockWav);
     }
     setIsRecording(false);
   };
 
   const handleSubmit = async () => {
     setError(null);
+
+    // Validate inputs before starting evaluation animation
+    if (responseMode === 'voice' && (!audioBlob || recordingTime < 1)) {
+      setError("Please record your spoken answer before submitting. Click 'Start Recording', speak clearly into your mic, then click 'Stop Recording'.");
+      return;
+    }
+
+    if (responseMode === 'text' && (!textInput.trim() || textInput.trim().length < 2)) {
+      setError("Please enter your answer in the text box before submitting.");
+      return;
+    }
+
     setEvaluating(true);
     setEvalStep(1);
 
-    // Simulated multi-agent pipeline visual progression
+    // Visual progression for multi-agent pipeline
     const stepTimer = setInterval(() => {
       setEvalStep(s => (s < 4 ? s + 1 : s));
     }, 600);
@@ -92,17 +99,13 @@ export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluat
     try {
       let result;
       if (responseMode === 'voice') {
-        const blobToSend = audioBlob || new Blob(["simulated recording"], { type: 'audio/wav' });
         result = await submitVoiceResponse(
           sessionData.session_id,
-          blobToSend,
+          audioBlob,
           questionText,
           questionObj.question_id
         );
       } else {
-        if (!textInput.trim()) {
-          throw new Error("Please enter your response before submitting.");
-        }
         result = await submitTextResponse(
           sessionData.session_id,
           textInput,

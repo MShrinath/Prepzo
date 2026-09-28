@@ -215,3 +215,16 @@ def get_candidate_improvement_plan(candidate_id: str, db: Session = Depends(get_
         )
         return plan_obj.model_dump()
     return plan.to_dict()
+
+
+@router.delete("/{candidate_id}/sessions")
+def clear_candidate_sessions(candidate_id: str, db: Session = Depends(get_db)):
+    """Deletes all session history, responses, evaluations, feedback, and gap records for a candidate to start fresh."""
+    sessions = db.query(InterviewSession).filter_by(candidate_id=candidate_id).all()
+    for s in sessions:
+        db.delete(s)
+    db.query(RecurringGap).filter_by(candidate_id=candidate_id).delete()
+    db.query(ImprovementPlan).filter_by(candidate_id=candidate_id).delete()
+    db.commit()
+    return {"status": "success", "message": f"Successfully cleared all sessions for candidate '{candidate_id}'."}
+

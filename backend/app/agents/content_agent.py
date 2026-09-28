@@ -3,6 +3,19 @@ from app.llm.provider import get_llm, parse_structured_output
 from app.schemas.agent_evaluations import ContentEvaluationOutput
 
 
+def is_trivial_response(text: str) -> bool:
+    clean = text.strip().lower()
+    words = clean.split()
+    if len(words) < 5:
+        return True
+    if clean in [
+        "hi", "hello", "hey", "test", "ok", "okay", "yes", "no", "idk",
+        "i don't know", "i dont know", "skip", "pass", "good", "fine", "nothing"
+    ]:
+        return True
+    return False
+
+
 class ContentAgent:
     def __init__(self):
         self.llm = get_llm(temperature=0.1)
@@ -14,12 +27,30 @@ class ContentAgent:
         evaluation_criteria: Optional[List[str]] = None,
         competency: Optional[str] = None,
     ) -> ContentEvaluationOutput:
+        if is_trivial_response(response_text):
+            return ContentEvaluationOutput(
+                relevance=1,
+                correctness=1,
+                completeness=1,
+                technical_depth=1,
+                evidence_quality=1,
+                strengths=[],
+                gaps=["Candidate provided no substantive answer or technical content to the question asked."],
+            )
+
         criteria_str = "\n".join([f"- {c}" for c in (evaluation_criteria or [])])
         if not criteria_str:
             criteria_str = "- Directly answers the prompt\n- Explains technical/operational methodology\n- Provides verifiable context or metrics"
 
         prompt = f"""You are the Content Evaluation Agent.
 Your responsibility is to determine whether the candidate substantively answered the question asked with sufficient technical or operational depth.
+
+CRITICAL SCORING RULE:
+If the candidate's response does not address the question, is a simple greeting ('hi', 'hello'), off-topic, evasive, or lacks technical/operational content:
+- Set relevance=1, correctness=1, completeness=1, technical_depth=1, evidence_quality=1.
+- strengths MUST be an empty array [].
+- gaps MUST state that no substantive response was provided.
+- Do NOT give passing marks to greetings or superficial non-answers.
 
 Question: "{question}"
 Target Competency: {competency or "General"}

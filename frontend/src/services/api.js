@@ -135,3 +135,12 @@ export async function fetchSessionFeedback(sessionId) {
   if (!res.ok) throw new Error('Failed to fetch session feedback');
   return res.json();
 }
+
+export async function clearCandidateSessions(candidateId = 'candidate_001') {
+  const res = await fetch(`${BASE_URL}/api/candidates/${candidateId}/sessions`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to clear candidate sessions');
+  return res.json();
+}
+

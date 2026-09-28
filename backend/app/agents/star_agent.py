@@ -3,6 +3,19 @@ from app.llm.provider import get_llm, parse_structured_output
 from app.schemas.agent_evaluations import STAREvaluationOutput, STARComponent
 
 
+def is_trivial_response(text: str) -> bool:
+    clean = text.strip().lower()
+    words = clean.split()
+    if len(words) < 5:
+        return True
+    if clean in [
+        "hi", "hello", "hey", "test", "ok", "okay", "yes", "no", "idk",
+        "i don't know", "i dont know", "skip", "pass", "good", "fine", "nothing"
+    ]:
+        return True
+    return False
+
+
 class STARAgent:
     def __init__(self):
         self.llm = get_llm(temperature=0.1)
@@ -13,6 +26,17 @@ class STARAgent:
         question_type: str,
         response_text: str
     ) -> STAREvaluationOutput:
+        if is_trivial_response(response_text):
+            return STAREvaluationOutput(
+                applicable=True,
+                reason="Candidate submitted a trivial non-answer.",
+                situation=STARComponent(score=1, evidence="No situation described."),
+                task=STARComponent(score=1, evidence="No task described."),
+                action=STARComponent(score=1, evidence="No action described."),
+                result=STARComponent(score=1, evidence="No result described."),
+                restructuring_recommendation="For behavioral questions, structure your answer using STAR: Describe the Situation -> Define your Task -> Explain specific Actions you took -> State the quantifiable Result."
+            )
+
         # Check if question is behavioral or situational
         is_behavioral = question_type.lower() in ["behavioral", "situational"] or any(
             phrase in question.lower() for phrase in [

@@ -59,22 +59,26 @@ def get_llm(temperature: float = 0.2):
 def parse_structured_output(llm: Any, prompt_text: str, pydantic_cls: Type[T], fallback_data: dict) -> T:
     """
     Invokes LLM and safely parses structured JSON matching pydantic_cls.
-    Falls back gracefully to fallback_data if LLM invocation or parsing fails.
+    Tries method="function_calling" first for OpenAI and compatible proxy gateways.
+    Falls back to schema prompt injection, and finally to fallback_data.
     """
     if isinstance(llm, MockLLM) or not hasattr(llm, "invoke"):
         return pydantic_cls(**fallback_data)
 
-    try:
-        # Check if structured output is natively supported
-        if hasattr(llm, "with_structured_output"):
-            structured_model = llm.with_structured_output(pydantic_cls)
+    # 1. Try structured output via function_calling
+    if hasattr(llm, "with_structured_output"):
+        try:
+            structured_model = llm.with_structured_output(pydantic_cls, method="function_calling")
             result = structured_model.invoke(prompt_text)
             if isinstance(result, pydantic_cls):
                 return result
             elif isinstance(result, dict):
                 return pydantic_cls(**result)
+        except Exception as e:
+            logger.info(f"Function calling structured output failed: {e}. Trying prompt injection.")
 
-        # Fallback to prompt injection of JSON schema
+    # 2. Try prompt injection of JSON schema
+    try:
         json_instruction = (
             f"\n\nReturn ONLY a valid JSON object strictly matching this schema:\n"
             f"{json.dumps(pydantic_cls.model_json_schema(), indent=2)}\n"
