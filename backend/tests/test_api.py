@@ -1,0 +1,97 @@
+import pytest
+from fastapi.testclient import TestClient
+from app.main import app
+from app.database.connection import init_db
+
+client = TestClient(app)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_database():
+    init_db()
+
+
+def test_health_check():
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "healthy"
+
+
+def test_get_preset_roles():
+    resp = client.get("/api/interview-modes/role-practice/roles")
+    assert resp.status_code == 200
+    roles = resp.json()["roles"]
+    assert "SDE" in roles
+    assert "Full Stack Developer" in roles
+    assert "Product Manager" in roles
+
+
+def test_candidate_profile_crud():
+    import uuid
+    cand_id = f"test_cand_{uuid.uuid4().hex[:6]}"
+    # Create
+    create_payload = {
+        "candidate_id": cand_id,
+        "name": "Jordan Smith",
+        "email": "jordan@example.com",
+        "target_role": "AI/ML Engineer",
+        "experience_years": 3,
+        "skills": [
+            {"skill_name": "PyTorch", "proficiency": "Advanced", "category": "Technical"},
+            {"skill_name": "Docker", "proficiency": "Intermediate", "category": "Technical"}
+        ],
+        "projects": [
+            {"name": "LLM Fine-tuning", "description": "Trained LoRA adapters on domain corpus."}
+        ]
+    }
+    res = client.post("/api/candidates", json=create_payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["candidate_id"] == cand_id
+    assert len(data["skills"]) == 2
+
+    # Get
+    res = client.get(f"/api/candidates/{cand_id}")
+    assert res.status_code == 200
+    assert res.json()["name"] == "Jordan Smith"
+
+
+def test_role_practice_flow():
+    # 1. Start role practice session
+    start_payload = {
+        "candidate_id": "candidate_001",
+        "role": "SDE",
+        "difficulty": "medium"
+    }
+    res = client.post("/api/interviews/role-practice", json=start_payload)
+    assert res.status_code == 200
+    session_data = res.json()
+    session_id = session_data["session_id"]
+    question = session_data["question"]["question"]
+    assert len(session_id) > 0
+    assert len(question) > 0
+
+    # 2. Submit response
+    resp_payload = {
+        "question_text": question,
+        "response": "I would profile the code first using cProfile, find slow functions, introduce Redis caching, and optimize the SQL query execution plans."
+    }
+    res = client.post(f"/api/interviews/{session_id}/response", json=resp_payload)
+    assert res.status_code == 200
+    eval_data = res.json()
+    assert "coaching_feedback" in eval_data
+    assert eval_data["coaching_feedback"]["overall_score"] > 0
+    assert "communication_evaluation" in eval_data
+    assert "content_evaluation" in eval_data
+
+    # 3. Check feedback endpoint
+    res = client.get(f"/api/interviews/{session_id}/feedback")
+    assert res.status_code == 200
+    feedbacks = res.json()
+    assert len(feedbacks) >= 1
+
+    # 4. Check candidate progress endpoint
+    res = client.get("/api/candidates/candidate_001/progress")
+    assert res.status_code == 200
+    progress = res.json()
+    assert progress["total_sessions"] >= 1
