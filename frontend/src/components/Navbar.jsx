@@ -17,9 +17,9 @@ export default function Navbar({ currentView, setView, candidate }) {
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-semibold text-base text-white tracking-tight">Revv</span>
+              <span className="font-semibold text-base text-white tracking-tight">Prepzo</span>
               <span className="text-[10px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-full bg-white/[0.06] text-[#98989D] border border-white/[0.06]">
-                Studio
+                AI
               </span>
             </div>
           </div>

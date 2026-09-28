@@ -102,7 +102,7 @@ export default function App() {
       </main>
 
       <footer className="border-t border-white/[0.06] py-6 px-4 text-center text-xs text-[#636366]">
-        Revv &bull; Intelligent Multi-Agent Interview Simulation &amp; Vocal Calibration
+        Prepzo &bull; Intelligent Multi-Agent Interview Simulation &amp; Vocal Calibration
       </footer>
     </div>
   );

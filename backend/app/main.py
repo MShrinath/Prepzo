@@ -11,14 +11,14 @@ from app.api.interviews import router as interviews_router
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-logger = logging.getLogger("InterviewCoachAPI")
+logger = logging.getLogger("PrepzoAPI")
 
 # Ensure uploads directory exists
 os.makedirs(settings.upload_dir, exist_ok=True)
 os.makedirs(os.path.join(settings.upload_dir, "audio"), exist_ok=True)
 
 app = FastAPI(
-    title="AI-Powered Communication & Interview Coaching System",
+    title="Prepzo - AI Interview & Communication Coach",
     description="Multi-agent interview practice platform powered by LangGraph, FastAPI, and React.",
     version="1.0.0",
 )
