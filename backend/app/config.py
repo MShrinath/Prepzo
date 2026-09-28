@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 from pydantic_settings import BaseSettings
 from pydantic import Field
 
@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     llm_model: str = Field(default="gemini-1.5-flash", alias="LLM_MODEL")
     google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    openai_base_url: Optional[str] = Field(default=None, alias="OPENAI_BASE_URL")
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
 
     # Voice / STT

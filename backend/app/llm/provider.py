@@ -42,11 +42,14 @@ def get_llm(temperature: float = 0.2):
     elif provider == "openai" and settings.openai_api_key:
         try:
             from langchain_openai import ChatOpenAI
-            return ChatOpenAI(
-                model=settings.llm_model or "gpt-4o-mini",
-                api_key=settings.openai_api_key,
-                temperature=temperature,
-            )
+            kwargs = {
+                "model": settings.llm_model or "gpt-4o-mini",
+                "api_key": settings.openai_api_key,
+                "temperature": temperature,
+            }
+            if settings.openai_base_url:
+                kwargs["base_url"] = settings.openai_base_url
+            return ChatOpenAI(**kwargs)
         except Exception as e:
             logger.warning(f"Failed to initialize OpenAI LLM: {e}. Falling back to mock.")
 
