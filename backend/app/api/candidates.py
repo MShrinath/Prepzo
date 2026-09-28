@@ -70,7 +70,12 @@ def create_candidate_profile(req: CandidateProfileCreate, db: Session = Depends(
 def get_candidate_profile(candidate_id: str, db: Session = Depends(get_db)):
     profile = db.query(CandidateProfile).filter_by(candidate_id=candidate_id).first()
     if not profile:
-        raise HTTPException(status_code=404, detail="Candidate not found")
+        if candidate_id == "candidate_001":
+            from app.database.connection import seed_defaults
+            seed_defaults()
+            profile = db.query(CandidateProfile).filter_by(candidate_id=candidate_id).first()
+        if not profile:
+            raise HTTPException(status_code=404, detail="Candidate not found")
     return profile.to_dict()
 
 
@@ -78,7 +83,25 @@ def get_candidate_profile(candidate_id: str, db: Session = Depends(get_db)):
 def update_candidate_profile(candidate_id: str, req: CandidateProfileUpdate, db: Session = Depends(get_db)):
     profile = db.query(CandidateProfile).filter_by(candidate_id=candidate_id).first()
     if not profile:
-        raise HTTPException(status_code=404, detail="Candidate not found")
+        profile = CandidateProfile(
+            candidate_id=candidate_id,
+            name=req.name or "Candidate",
+            email=req.email,
+            target_role=req.target_role or "SDE",
+            experience_years=req.experience_years or 0,
+            education=req.education,
+            bio=req.bio,
+            target_competencies=json.dumps(req.target_competencies or [
+                "Problem Solving",
+                "Technical Depth & Domain Mastery",
+                "Communication & Clarity",
+                "Ownership & Accountability",
+            ]),
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+        return profile.to_dict()
 
     if req.name is not None:
         profile.name = req.name
@@ -104,7 +127,23 @@ def update_candidate_profile(candidate_id: str, req: CandidateProfileUpdate, db:
 def get_candidate_progress(candidate_id: str, db: Session = Depends(get_db)):
     profile = db.query(CandidateProfile).filter_by(candidate_id=candidate_id).first()
     if not profile:
-        raise HTTPException(status_code=404, detail="Candidate not found")
+        if candidate_id == "candidate_001":
+            from app.database.connection import seed_defaults
+            seed_defaults()
+            profile = db.query(CandidateProfile).filter_by(candidate_id=candidate_id).first()
+    
+    if not profile:
+        return {
+            "candidate_id": candidate_id,
+            "candidate_name": "Candidate",
+            "target_role": "SDE",
+            "total_sessions": 0,
+            "total_responses": 0,
+            "average_overall_score": 0,
+            "average_communication_score": 0,
+            "average_content_score": 0,
+            "timeline": [],
+        }
 
     # Fetch all candidate sessions
     sessions = db.query(InterviewSession).filter_by(candidate_id=candidate_id).order_by(InterviewSession.created_at.asc()).all()

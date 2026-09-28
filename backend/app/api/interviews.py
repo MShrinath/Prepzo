@@ -47,6 +47,33 @@ PRESET_ROLES = [
 ]
 
 
+def _ensure_candidate_profile(candidate_id: str, db: Session, target_role: str = "SDE") -> CandidateProfile:
+    profile = db.query(CandidateProfile).filter_by(candidate_id=candidate_id).first()
+    if not profile:
+        if candidate_id == "candidate_001":
+            from app.database.connection import seed_defaults
+            seed_defaults()
+            profile = db.query(CandidateProfile).filter_by(candidate_id=candidate_id).first()
+        if not profile:
+            profile = CandidateProfile(
+                candidate_id=candidate_id,
+                name="Candidate",
+                email=f"{candidate_id}@example.com",
+                target_role=target_role,
+                experience_years=2,
+                target_competencies=json.dumps([
+                    "Problem Solving",
+                    "Communication & Clarity",
+                    "Technical Depth & Domain Mastery",
+                    "Ownership & Accountability",
+                ]),
+            )
+            db.add(profile)
+            db.commit()
+            db.refresh(profile)
+    return profile
+
+
 @router.get("/interview-modes/role-practice/roles")
 def get_available_roles():
     return {"roles": PRESET_ROLES}
@@ -54,13 +81,11 @@ def get_available_roles():
 
 @router.post("/interviews")
 def start_interview_session(req: GenericInterviewStartRequest, db: Session = Depends(get_db)):
-    profile = db.query(CandidateProfile).filter_by(candidate_id=req.candidate_id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Candidate not found")
-
-    session_id = f"sess_{uuid.uuid4().hex[:10]}"
     mode = req.mode or "role_practice"
     role = req.target_role or "SDE"
+    profile = _ensure_candidate_profile(req.candidate_id, db, target_role=role)
+
+    session_id = f"sess_{uuid.uuid4().hex[:10]}"
     session = InterviewSession(
         session_id=session_id,
         candidate_id=req.candidate_id,
@@ -93,9 +118,7 @@ def start_interview_session(req: GenericInterviewStartRequest, db: Session = Dep
 
 @router.post("/interviews/role-practice")
 def start_role_practice(req: RolePracticeStartRequest, db: Session = Depends(get_db)):
-    profile = db.query(CandidateProfile).filter_by(candidate_id=req.candidate_id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Candidate not found")
+    profile = _ensure_candidate_profile(req.candidate_id, db, target_role=req.role)
 
     session_id = f"sess_{uuid.uuid4().hex[:10]}"
     session = InterviewSession(
@@ -139,9 +162,7 @@ async def start_resume_jd_interview(
     resume_text: Optional[str] = Form(None),
     db: Session = Depends(get_db),
 ):
-    profile = db.query(CandidateProfile).filter_by(candidate_id=candidate_id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Candidate not found")
+    profile = _ensure_candidate_profile(candidate_id, db, target_role=target_role or "SDE")
 
     extracted_resume_text = resume_text or ""
     if resume_file:
@@ -196,9 +217,7 @@ async def start_resume_jd_interview(
 
 @router.post("/interviews/hr")
 def start_hr_interview(req: HRStartRequest, db: Session = Depends(get_db)):
-    profile = db.query(CandidateProfile).filter_by(candidate_id=req.candidate_id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Candidate not found")
+    profile = _ensure_candidate_profile(req.candidate_id, db, target_role="HR Behavioral")
 
     session_id = f"sess_{uuid.uuid4().hex[:10]}"
     session = InterviewSession(
