@@ -48,7 +48,7 @@ def get_llm(temperature: float = 0.2):
                 "temperature": temperature,
             }
             if settings.openai_base_url:
-                kwargs["base_url"] = settings.openai_base_url
+                kwargs["base_url"] = settings.openai_base_url.strip()
             return ChatOpenAI(**kwargs)
         except Exception as e:
             logger.warning(f"Failed to initialize OpenAI LLM: {e}. Falling back to mock.")

@@ -74,7 +74,7 @@ class VoiceService:
                 from openai import OpenAI
                 client_kwargs = {"api_key": settings.openai_api_key}
                 if settings.openai_base_url:
-                    client_kwargs["base_url"] = settings.openai_base_url
+                    client_kwargs["base_url"] = settings.openai_base_url.strip()
                 client = OpenAI(**client_kwargs)
                 audio_file = io.BytesIO(file_bytes)
                 audio_file.name = filename

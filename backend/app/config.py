@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import List, Optional
 from pydantic_settings import BaseSettings
 from pydantic import Field
@@ -36,9 +37,13 @@ class Settings(BaseSettings):
     data_dir: str = Field(default="./data", alias="DATA_DIR")
 
     class Config:
-        env_file = ".env"
+        env_file = [str(Path(__file__).resolve().parents[2] / ".env"), ".env"]
         env_file_encoding = "utf-8"
         extra = "ignore"
+
+    @property
+    def clean_openai_base_url(self) -> Optional[str]:
+        return self.openai_base_url.strip() if self.openai_base_url else None
 
     @property
     def cors_origin_list(self) -> List[str]:
