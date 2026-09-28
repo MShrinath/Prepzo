@@ -22,6 +22,8 @@ google-generativeai>=0.5.2
 # Document & Audio processing
 pypdf>=4.2.0
 numpy>=1.26.0
+pillow>=10.0.0
+reportlab>=4.0.0
 
 # Optional vector store
 # chromadb / pgvector
