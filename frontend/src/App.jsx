@@ -8,13 +8,18 @@ import PlansScreen from './components/PlansScreen';
 import ResumeAnalysisView from './components/ResumeAnalysisView';
 import ResourcesView from './components/ResourcesView';
 import SettingsView from './components/SettingsView';
-import { fetchCandidateProfile, startRolePractice, startHRInterview } from './services/api';
+import {
+  fetchCandidateProfile,
+  fetchCandidateProgress,
+  startRolePractice,
+  startHRInterview
+} from './services/api';
 
 export default function App() {
-  // Theme state: 'light' or 'dark'
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('prepzo-theme') || 'light';
-  });
+  // Enforce dark theme across application permanently
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+  }, []);
 
   // Current view: 'home' | 'practice' | 'resume' | 'progress' | 'plans' | 'resources' | 'settings'
   const [currentView, setView] = useState('home');
@@ -30,36 +35,23 @@ export default function App() {
     projects: [],
   });
 
-  const [sessionData, setSessionData] = useState({
-    session_id: 'sess_live_101',
-    role: 'Software Engineer – Technical Interview',
-    question_number: 3,
-    total_questions: 10,
-    difficulty: 'Medium',
-    question: {
-      question:
-        'Explain the difference between SQL and NoSQL databases. When would you choose one over the other?',
-      competency: 'Technical Knowledge',
-      difficulty: 'Medium',
-    },
+  const [candidateProgress, setCandidateProgress] = useState({
+    total_sessions: 0,
+    total_responses: 0,
+    average_overall_score: 0,
+    average_communication_score: 0,
+    average_content_score: 0,
+    timeline: [],
   });
 
+  // Initial sessionData starts strictly as null (no fake interview in progress)
+  const [sessionData, setSessionData] = useState(null);
   const [evaluationResult, setEvaluationResult] = useState(null);
 
-  // Sync theme to <html> tag
+  // Load candidate profile and progress from API on mount
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('prepzo-theme', theme);
-  }, [theme]);
-
-  // Load candidate profile from API if available
-  useEffect(() => {
-    fetchCandidateProfile('candidate_001')
+    const candId = 'candidate_001';
+    fetchCandidateProfile(candId)
       .then((profile) => {
         if (profile) {
           setCandidate((prev) => ({
@@ -70,22 +62,36 @@ export default function App() {
         }
       })
       .catch((err) => console.log('Using baseline candidate data:', err));
+
+    fetchCandidateProgress(candId)
+      .then((progress) => {
+        if (progress) setCandidateProgress(progress);
+      })
+      .catch((err) => console.log('Using baseline candidate progress:', err));
   }, []);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  const refreshProgress = () => {
+    fetchCandidateProgress(candidate?.candidate_id || 'candidate_001')
+      .then((prog) => {
+        if (prog) setCandidateProgress(prog);
+      })
+      .catch((err) => console.warn('Progress refresh:', err));
   };
 
   const handleStartTechnical = async () => {
-    setView('practice');
     try {
-      const data = await startRolePractice(candidate.candidate_id, 'Software Engineer', 'Technical');
+      const data = await startRolePractice(
+        candidate.candidate_id,
+        candidate.target_role || 'Software Engineer',
+        'Technical & System Architecture'
+      );
       if (data && data.session_id) {
         setSessionData(data);
       }
     } catch (e) {
-      console.warn('Using default technical practice session:', e);
+      console.warn('Backend connection note:', e);
     }
+    setView('practice');
   };
 
   const handleStartResumeJD = () => {
@@ -93,48 +99,32 @@ export default function App() {
   };
 
   const handleStartHR = async () => {
-    setSessionData({
-      session_id: 'hr_' + Date.now(),
-      role: 'HR & Behavioral Interview',
-      question_number: 1,
-      total_questions: 5,
-      difficulty: 'Medium',
-      question: {
-        question: 'Tell me about a time you received difficult constructive feedback. How did you process and apply it?',
-        competency: 'Receiving Feedback & Growth Mindset',
-        difficulty: 'Medium',
-      },
-    });
-    setView('practice');
     try {
-      const data = await startHRInterview(candidate.candidate_id, ['conflict_resolution', 'receiving_feedback']);
+      const data = await startHRInterview(candidate.candidate_id, [
+        'conflict_resolution',
+        'leadership',
+        'teamwork',
+      ]);
       if (data && data.session_id) {
         setSessionData(data);
       }
     } catch (e) {
-      console.warn('Using default HR session:', e);
+      console.warn('Backend connection note:', e);
     }
+    setView('practice');
   };
 
-  const handleEndInterview = () => {
+  const handleEndInterview = (evalData) => {
+    if (evalData) {
+      setEvaluationResult(evalData);
+    }
+    refreshProgress();
     setResultsTab('detailed');
     setView('progress');
   };
 
   const handleRetakeInterview = () => {
-    setSessionData({
-      session_id: 'sess_' + Date.now(),
-      role: 'Software Engineer – Technical Interview',
-      question_number: 1,
-      total_questions: 10,
-      difficulty: 'Medium',
-      question: {
-        question:
-          'Explain the difference between SQL and NoSQL databases. When would you choose one over the other?',
-        competency: 'Technical Knowledge',
-        difficulty: 'Medium',
-      },
-    });
+    setSessionData(null);
     setView('practice');
   };
 
@@ -142,12 +132,8 @@ export default function App() {
     window.print();
   };
 
-  const handleRegeneratePlan = () => {
-    // Handled in PlansScreen with state feedback
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#070B14] text-slate-900 dark:text-slate-100 flex font-sans selection:bg-blue-600 selection:text-white transition-colors duration-200">
+    <div className="min-h-screen bg-[#070B14] text-slate-100 flex font-sans selection:bg-blue-600 selection:text-white transition-colors duration-200">
       {/* 1. Left Sidebar Navigation */}
       <Sidebar
         currentView={currentView}
@@ -159,10 +145,9 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto min-h-screen">
         {/* Top Header Bar */}
         <TopBar
-          theme={theme}
-          toggleTheme={toggleTheme}
           candidate={candidate}
           setView={setView}
+          currentView={currentView}
         />
 
         {/* Dynamic Screen Views */}
@@ -171,6 +156,7 @@ export default function App() {
           {currentView === 'home' && (
             <HomeScreen
               candidate={candidate}
+              candidateProgress={candidateProgress}
               onStartTechnical={handleStartTechnical}
               onStartResumeJD={handleStartResumeJD}
               onStartHR={handleStartHR}
@@ -188,7 +174,6 @@ export default function App() {
               sessionData={sessionData}
               candidate={candidate}
               onEndInterview={handleEndInterview}
-              onNextQuestion={() => {}}
             />
           )}
 
@@ -197,6 +182,8 @@ export default function App() {
             <ResultsScreen
               evaluationData={evaluationResult}
               candidate={candidate}
+              sessionData={sessionData}
+              candidateProgress={candidateProgress}
               initialTab={resultsTab}
               onRetakeInterview={handleRetakeInterview}
               onDownloadReport={handleDownloadReport}
@@ -207,8 +194,12 @@ export default function App() {
           {currentView === 'plans' && (
             <PlansScreen
               candidate={candidate}
-              onRegeneratePlan={handleRegeneratePlan}
-              onStartPractice={handleStartTechnical}
+              candidateProgress={candidateProgress}
+              evaluationData={evaluationResult}
+              onStartPractice={() => {
+                setSessionData(null);
+                setView('practice');
+              }}
             />
           )}
 
@@ -231,8 +222,6 @@ export default function App() {
             <SettingsView
               candidate={candidate}
               onProfileUpdated={(updated) => setCandidate(updated)}
-              theme={theme}
-              toggleTheme={toggleTheme}
             />
           )}
         </main>
