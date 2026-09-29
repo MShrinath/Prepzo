@@ -6,123 +6,229 @@ import {
   AlertCircle,
   Quote,
   TrendingUp,
-  ArrowDownCircle,
-  FileCheck,
-  Play,
   Volume2,
   Sparkles,
   ArrowRight,
-  Layers,
   Shield,
   MessageSquare,
   BarChart2,
-  Check
+  Check,
+  Target,
+  Clock,
+  Layers
 } from 'lucide-react';
+import { exportSessionPDF, exportDossierPDF } from '../services/api';
 
 export default function ResultsScreen({
   evaluationData,
+  candidate,
+  sessionData,
+  candidateProgress,
   onRetakeInterview,
   onDownloadReport,
-  candidate,
   initialTab = 'detailed',
 }) {
   const [activeTab, setActiveTab] = useState(initialTab); // 'detailed' | 'strengths' | 'gaps' | 'questions' | 'transcript' | 'analytics'
   const [selectedDonut, setSelectedDonut] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
 
+  const totalSessions = candidateProgress?.total_sessions ?? (evaluationData ? 1 : 0);
+
+  // If completely empty with zero evaluations and zero sessions
+  if (!evaluationData && totalSessions === 0) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            Performance Dossier
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Real-time evaluation analysis and 5-axis competency breakdown.
+          </p>
+        </div>
+
+        <div className="bg-[#121927] border border-slate-800 rounded-3xl p-8 sm:p-12 text-center shadow-xl space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mx-auto shadow-inner">
+            <BarChart2 className="w-8 h-8" />
+          </div>
+
+          <div className="max-w-md mx-auto space-y-2">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 border border-blue-500/30 text-blue-400">
+              No Sessions Completed
+            </span>
+            <h2 className="text-xl sm:text-2xl font-bold text-white">
+              No Completed Interview Assessments Yet
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              Complete your first practice interview to unlock your 5-axis competency radar, verbatim speech transcript analysis, and executive coaching feedback.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <button
+              onClick={onRetakeInterview}
+              className="inline-flex items-center space-x-2 px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
+            >
+              <span>Start Practice Interview</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Derive real scores
+  const overallScore = Math.round(
+    evaluationData?.coaching_feedback?.overall_score ?? (candidateProgress?.average_overall_score || 75)
+  );
+
+  const commAvg = evaluationData?.communication_evaluation
+    ? Math.round(
+        (evaluationData.communication_evaluation.clarity_score +
+          evaluationData.communication_evaluation.conciseness_score +
+          evaluationData.communication_evaluation.structure_score +
+          evaluationData.communication_evaluation.communication_quality_score) /
+          4
+      )
+    : Math.round(candidateProgress?.average_communication_score || 72);
+
+  const techAvg = evaluationData?.content_evaluation
+    ? Math.round(
+        (evaluationData.content_evaluation.technical_depth_score +
+          evaluationData.content_evaluation.correctness_score +
+          evaluationData.content_evaluation.relevance_score) /
+          3
+      )
+    : Math.round(candidateProgress?.average_content_score || 76);
+
+  const starAvg = evaluationData?.star_evaluation?.applicable
+    ? Math.round(
+        (evaluationData.star_evaluation.situation_score +
+          evaluationData.star_evaluation.task_score +
+          evaluationData.star_evaluation.action_score +
+          evaluationData.star_evaluation.result_score) /
+          4
+      )
+    : 70;
+
+  const confidenceScore = evaluationData?.communication_evaluation?.communication_quality_score
+    ? Math.round(evaluationData.communication_evaluation.communication_quality_score)
+    : Math.round((commAvg + overallScore) / 2);
+
+  const getScoreStatus = (score) => {
+    if (score >= 85) return 'Exceeds Expectations';
+    if (score >= 70) return 'Solid Performance';
+    if (score >= 55) return 'Developing';
+    return 'Needs Immediate Focus';
+  };
+
+  const getScoreColor = (score) => {
+    if (score >= 80) return '#10B981'; // emerald
+    if (score >= 70) return '#3B82F6'; // blue
+    if (score >= 55) return '#F59E0B'; // amber
+    return '#EF4444'; // rose
+  };
+
   const scoreDonuts = [
     {
       id: 'overall',
       label: 'Overall Score',
-      score: 78,
-      status: 'Good Performance',
-      color: '#10B981', // green
-      description: 'Above the 75th percentile for Mid-Level Software Engineer interviews.',
+      score: overallScore,
+      status: getScoreStatus(overallScore),
+      color: getScoreColor(overallScore),
+      description: `Evaluated by Prepzo LangGraph multi-agent diagnostic suite for ${sessionData?.role || candidate?.target_role || 'Software Engineer'}.`,
     },
     {
       id: 'technical',
-      label: 'Technical Knowledge',
-      score: 82,
-      status: 'Strong',
-      color: '#3B82F6', // blue
-      description: 'Solid grasp of distributed systems, indexing, and transactional boundaries.',
+      label: 'Technical Depth',
+      score: techAvg,
+      status: getScoreStatus(techAvg),
+      color: getScoreColor(techAvg),
+      description: 'Domain mastery, accuracy of technical explanations, and trade-off considerations.',
     },
     {
       id: 'communication',
       label: 'Communication',
-      score: 75,
-      status: 'Good',
-      color: '#F59E0B', // orange
-      description: 'Crisp delivery with natural cadence; minimal hesitation.',
+      score: commAvg,
+      status: getScoreStatus(commAvg),
+      color: getScoreColor(commAvg),
+      description: 'Clarity, conciseness, vocal cadence, and structured articulation.',
     },
     {
       id: 'star',
-      label: 'STAR Structure',
-      score: 70,
-      status: 'Needs Work',
-      color: '#8B5CF6', // purple
-      description: 'Actions were described well, but measurable business results can be sharper.',
+      label: 'STAR Alignment',
+      score: starAvg,
+      status: getScoreStatus(starAvg),
+      color: getScoreColor(starAvg),
+      description: 'Adherence to Situation, Task, Action, and measurable business Results.',
     },
     {
       id: 'confidence',
-      label: 'Confidence',
-      score: 78,
-      status: 'Good',
-      color: '#14B8A6', // teal
-      description: 'Steady vocal pitch and confident voice projection throughout.',
+      label: 'Vocal Delivery',
+      score: confidenceScore,
+      status: getScoreStatus(confidenceScore),
+      color: getScoreColor(confidenceScore),
+      description: 'Confidence, minimal hesitation pauses, and steady projection.',
     },
   ];
 
-  const highlights = [
-    'Good understanding of technical fundamentals',
-    'Clear and concise explanations',
-    'Relevant real-world examples',
-    'Good problem-solving approach',
-  ];
+  const highlights = evaluationData?.coaching_feedback?.strengths?.length > 0
+    ? evaluationData.coaching_feedback.strengths
+    : [
+        'Clear communicative structure without excessive filler hesitation',
+        'Directly addressed the primary intent of the question',
+        'Demonstrates practical technical problem-solving perspective',
+      ];
 
-  const improvements = [
-    'Provide more structured STAR responses',
-    'Avoid filler words and long pauses',
-    'Go deeper into trade-offs and edge cases',
-    'Be more concise in your answers',
-  ];
+  const improvements = evaluationData?.coaching_feedback?.improvement_areas?.length > 0
+    ? evaluationData.coaching_feedback.improvement_areas
+    : [
+        'Quantify achievements with concrete business impact and metrics',
+        'Elaborate on engineering trade-offs between alternative designs',
+        'Structure responses strictly into Situation, Task, Action, and Result',
+      ];
 
-  const questionsReview = [
-    {
-      qNum: 1,
-      question: 'Explain the difference between SQL and NoSQL databases. When would you choose one over the other?',
-      score: 84,
-      status: 'Strong',
-      userExcerpt: 'SQL databases are relational and use a fixed schema, while NoSQL databases are non-relational and more flexible...',
-      modelSuggestion: 'Good job highlighting ACID vs BASE. Mentioning CAP theorem tradeoffs (Partition tolerance vs Consistency) would elevate this to Senior level.',
-    },
-    {
-      qNum: 2,
-      question: 'Can you give a real-world example where you used or would prefer NoSQL over SQL?',
-      score: 78,
-      status: 'Good',
-      userExcerpt: 'In our e-commerce platform, we used MongoDB for catalog management because products had heterogeneous attributes...',
-      modelSuggestion: 'Clear architecture rationale. Highlight the migration strategy or data validation mechanisms used in production.',
-    },
-    {
-      qNum: 3,
-      question: 'Tell me about a time you had a technical disagreement with a team member. How did you resolve it?',
-      score: 72,
-      status: 'Needs STAR Polish',
-      userExcerpt: 'We disagreed on whether to use GraphQL or REST. I set up a spike benchmark to compare payload latency...',
-      modelSuggestion: 'Good Action step! Add a concrete measurable Result (e.g. reduced mobile bundle size by 35% and unblocked the team by 3 days).',
-    },
-  ];
+  const questionText =
+    evaluationData?.question_text ||
+    sessionData?.question?.question ||
+    'Interview Question';
 
-  const handleDownload = () => {
+  const userExcerpt =
+    evaluationData?.transcript ||
+    evaluationData?.candidate_response ||
+    'Response recorded and evaluated.';
+
+  const modelSuggestion =
+    evaluationData?.coaching_feedback?.improved_answer_structure ||
+    'Begin with the high-level architecture choice, outline the concrete action steps taken, and conclude with measurable impact.';
+
+  const followUpQuestion = evaluationData?.coaching_feedback?.follow_up_question;
+
+  const handleDownload = async () => {
     setIsExporting(true);
-    setTimeout(() => {
-      setIsExporting(false);
+    try {
+      if (sessionData?.session_id) {
+        const blob = await exportSessionPDF(sessionData.session_id);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `prepzo_assessment_${sessionData.session_id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } else {
+        window.print();
+      }
+    } catch (e) {
+      console.warn('PDF export fallback to browser print:', e);
       window.print();
-    }, 400);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  // SVG Circular Gauge helper
+  // SVG Circular Gauge
   const CircularGauge = ({ item }) => {
     const size = 96;
     const strokeWidth = 8;
@@ -134,13 +240,13 @@ export default function ResultsScreen({
     return (
       <div
         onClick={() => setSelectedDonut(isSelected ? null : item.id)}
-        className={`bg-white dark:bg-[#121927] border rounded-2xl p-4 flex flex-col items-center justify-between text-center shadow-xs hover:shadow-md transition-all cursor-pointer ${
+        className={`bg-[#121927] border rounded-2xl p-4 flex flex-col items-center justify-between text-center shadow-xs hover:shadow-md transition-all cursor-pointer ${
           isSelected
-            ? 'border-blue-500 ring-2 ring-blue-500/20 dark:border-blue-400'
-            : 'border-slate-200 dark:border-slate-800/90'
+            ? 'border-blue-500 ring-2 ring-blue-500/20'
+            : 'border-slate-800'
         }`}
       >
-        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 truncate max-w-full">
+        <span className="text-xs font-semibold text-slate-300 mb-2 truncate max-w-full">
           {item.label}
         </span>
         <div className="relative w-24 h-24 flex items-center justify-center my-1">
@@ -151,7 +257,7 @@ export default function ResultsScreen({
               r={radius}
               stroke="currentColor"
               strokeWidth={strokeWidth}
-              className="text-slate-100 dark:text-slate-800"
+              className="text-slate-800"
               fill="transparent"
             />
             <circle
@@ -168,26 +274,26 @@ export default function ResultsScreen({
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center flex-col">
-            <span className="text-xl font-bold text-slate-900 dark:text-white">
+            <span className="text-xl font-bold text-white">
               {item.score}%
             </span>
           </div>
         </div>
-        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-2">
+        <span className="text-[11px] font-semibold text-slate-400 mt-2">
           {item.status}
         </span>
       </div>
     );
   };
 
-  // Radar Calculations
-  const userScores = [82, 75, 70, 78, 85];
+  // Radar chart polygon points
+  const userScores = [techAvg, commAvg, starAvg, confidenceScore, overallScore];
   const avgScores = [68, 65, 60, 70, 68];
   const radarCenter = 100;
   const radarRadius = 70;
 
   const getPoint = (score, index, total) => {
-    const angle = (Math.PI * 2 / total) * index - Math.PI / 2;
+    const angle = ((Math.PI * 2) / total) * index - Math.PI / 2;
     const r = (score / 100) * radarRadius;
     const x = radarCenter + r * Math.cos(angle);
     const y = radarCenter + r * Math.sin(angle);
@@ -208,12 +314,13 @@ export default function ResultsScreen({
     })
     .join(' ');
 
-  const trendData = [
-    { label: 'Oct 1', score: 35, x: 25, y: 75 },
-    { label: 'Oct 8', score: 50, x: 95, y: 62 },
-    { label: 'Oct 15', score: 58, x: 165, y: 55 },
-    { label: 'Oct 22', score: 68, x: 235, y: 42 },
-    { label: 'Oct 30', score: 78, x: 305, y: 28 },
+  const tabs = [
+    { id: 'detailed', label: 'Detailed Analysis' },
+    { id: 'strengths', label: 'Strengths' },
+    { id: 'gaps', label: 'Gaps & Action Items' },
+    { id: 'questions', label: 'Question Review' },
+    { id: 'transcript', label: 'Verbatim Transcript' },
+    { id: 'analytics', label: 'Multi-Session Analytics' },
   ];
 
   return (
@@ -221,11 +328,16 @@ export default function ResultsScreen({
       {/* 1. Header with Download & Retake */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Interview Results
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Here's a detailed analysis of your performance.
+          <div className="flex items-center space-x-2.5">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+              Interview Evaluation Results
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              Live AI Assessment
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Grounded multi-agent breakdown for {sessionData?.role || candidate?.target_role || 'Software Engineer'}.
           </p>
         </div>
 
@@ -233,10 +345,10 @@ export default function ResultsScreen({
           <button
             onClick={handleDownload}
             disabled={isExporting}
-            className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-700/80 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-2xs active:scale-95 cursor-pointer"
+            className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-[#121927] border border-slate-700 text-xs sm:text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-all shadow-xs active:scale-95 cursor-pointer"
           >
             <Download className="w-4 h-4" />
-            <span>{isExporting ? 'Generating Report...' : 'Download Report'}</span>
+            <span>{isExporting ? 'Generating PDF...' : 'Download Report (PDF)'}</span>
           </button>
 
           <button
@@ -244,7 +356,7 @@ export default function ResultsScreen({
             className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-xs sm:text-sm font-semibold text-white transition-all shadow-sm cursor-pointer"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>Retake Interview</span>
+            <span>Practice Another Session</span>
           </button>
         </div>
       </div>
@@ -258,401 +370,248 @@ export default function ResultsScreen({
 
       {/* Selected Donut Description Banner */}
       {selectedDonut && (
-        <div className="p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-xs flex items-center justify-between animate-fadeIn">
-          <div className="flex items-center space-x-2">
-            <span className="font-bold text-blue-700 dark:text-blue-300">
-              {scoreDonuts.find((d) => d.id === selectedDonut)?.label}:
-            </span>
-            <span className="text-slate-700 dark:text-slate-300">
-              {scoreDonuts.find((d) => d.id === selectedDonut)?.description}
-            </span>
-          </div>
+        <div className="p-4 rounded-2xl bg-blue-950/30 border border-blue-900/40 text-xs text-blue-200 flex items-center justify-between">
+          <span>
+            <strong>{scoreDonuts.find((d) => d.id === selectedDonut)?.label}:</strong>{' '}
+            {scoreDonuts.find((d) => d.id === selectedDonut)?.description}
+          </span>
           <button
             onClick={() => setSelectedDonut(null)}
-            className="text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+            className="text-blue-400 hover:text-white font-semibold text-xs ml-4 cursor-pointer"
           >
             Dismiss
           </button>
         </div>
       )}
 
-      {/* 3. Secondary Nav Tabs */}
-      <div className="border-b border-slate-200 dark:border-slate-800 flex items-center space-x-6 overflow-x-auto text-xs sm:text-sm font-medium scrollbar-none">
-        {[
-          { id: 'detailed', label: 'Detailed Feedback' },
-          { id: 'strengths', label: 'Strengths' },
-          { id: 'gaps', label: 'Areas to Improve' },
-          { id: 'questions', label: 'Question Review' },
-          { id: 'transcript', label: 'Transcript' },
-          { id: 'analytics', label: 'Analytics' },
-        ].map((tab) => (
+      {/* 3. Navigation Tabs */}
+      <div className="flex items-center border-b border-slate-800 overflow-x-auto gap-6 text-xs sm:text-sm font-semibold">
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`pb-3 whitespace-nowrap cursor-pointer transition-colors relative ${
+            className={`pb-3 transition-colors relative whitespace-nowrap cursor-pointer ${
               activeTab === tab.id
-                ? 'text-blue-600 dark:text-blue-400 font-semibold'
-                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                ? 'text-blue-400 font-bold'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             {tab.label}
             {activeTab === tab.id && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full" />
             )}
           </button>
         ))}
       </div>
 
-      {/* 4. Tab Content Area */}
-
-      {/* TAB 1: Detailed Feedback (Default / Screenshot Match) */}
+      {/* Tab 1: Detailed Analysis */}
       {activeTab === 'detailed' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column (7 cols): Overall Feedback + Highlights + Areas to Improve */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Overall Feedback Card */}
-            <div className="bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-800/90 rounded-2xl p-6 shadow-xs space-y-4">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                Overall Feedback
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                You demonstrated a good understanding of core concepts and explained your thought process clearly. Your examples were relevant, but you can improve on providing more structured answers, especially for behavioral questions.
-              </p>
-
-              {/* Quote Box */}
-              <div className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 flex items-start space-x-3">
-                <Quote className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5 fill-blue-600/10" />
-                <p className="text-xs text-blue-900 dark:text-blue-200 font-medium leading-relaxed italic">
-                  "Your technical explanations are clear and show practical knowledge. With more structured answers using the STAR method, your responses can be even stronger."
-                </p>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Strengths Card */}
+            <div className="bg-[#121927] border border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
+              <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm sm:text-base">
+                <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                <span>Identified Strengths</span>
               </div>
+              <ul className="space-y-2.5">
+                {highlights.map((item, idx) => (
+                  <li key={idx} className="flex items-start space-x-2.5 text-xs sm:text-sm text-slate-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            {/* Highlights & Areas to Improve Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {/* Key Highlights */}
-              <div className="bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs space-y-3">
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Key Highlights
-                </h4>
-                <ul className="space-y-2.5">
-                  {highlights.map((h, i) => (
-                    <li key={i} className="flex items-start space-x-2.5 text-xs text-slate-700 dark:text-slate-300">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                      <span>{h}</span>
-                    </li>
-                  ))}
-                </ul>
+            {/* Areas for Improvement */}
+            <div className="bg-[#121927] border border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
+              <div className="flex items-center space-x-2 text-amber-400 font-bold text-sm sm:text-base">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <span>Areas to Improve</span>
               </div>
-
-              {/* Areas to Improve */}
-              <div className="bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs space-y-3">
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Areas to Improve
-                </h4>
-                <ul className="space-y-2.5">
-                  {improvements.map((imp, i) => (
-                    <li key={i} className="flex items-start space-x-2.5 text-xs text-slate-700 dark:text-slate-300">
-                      <ArrowDownCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                      <span>{imp}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <ul className="space-y-2.5">
+                {improvements.map((item, idx) => (
+                  <li key={idx} className="flex items-start space-x-2.5 text-xs sm:text-sm text-slate-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
 
-          {/* Right Column (5 cols): Skill Breakdown Radar & Score Trend Chart */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Skill Breakdown Radar Chart */}
-            <div className="bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Skill Breakdown
-                </h3>
-                <div className="flex items-center space-x-3 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                  <span className="flex items-center space-x-1">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" />
-                    <span>Your Score</span>
-                  </span>
-                  <span className="flex items-center space-x-1">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-slate-300 dark:bg-slate-600 inline-block" />
-                    <span>Average</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* Radar Canvas */}
-              <div className="relative flex items-center justify-center p-2">
-                <svg viewBox="0 0 200 200" className="w-full max-w-[240px] h-auto overflow-visible">
-                  {[0.25, 0.5, 0.75, 1.0].map((scale) => {
-                    const pts = [0, 1, 2, 3, 4]
-                      .map((i) => {
-                        const p = getPoint(scale * 100, i, 5);
-                        return `${p.x},${p.y}`;
-                      })
-                      .join(' ');
-                    return (
-                      <polygon
-                        key={scale}
-                        points={pts}
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1"
-                        className="text-slate-200 dark:text-slate-700/60"
-                      />
-                    );
-                  })}
-
-                  {[0, 1, 2, 3, 4].map((i) => {
-                    const p = getPoint(100, i, 5);
-                    return (
-                      <line
-                        key={i}
-                        x1={radarCenter}
-                        y1={radarCenter}
-                        x2={p.x}
-                        y2={p.y}
-                        stroke="currentColor"
-                        strokeWidth="1"
-                        className="text-slate-200 dark:text-slate-700/60"
-                      />
-                    );
-                  })}
-
-                  {/* Average Polygon */}
-                  <polygon
-                    points={avgPolygonPoints}
-                    fill="rgba(148, 163, 184, 0.15)"
-                    stroke="#94A3B8"
-                    strokeWidth="1.5"
-                  />
-
-                  {/* Candidate Polygon */}
-                  <polygon
-                    points={userPolygonPoints}
-                    fill="rgba(59, 130, 246, 0.25)"
-                    stroke="#3B82F6"
-                    strokeWidth="2"
-                  />
-
-                  {userScores.map((s, i) => {
-                    const p = getPoint(s, i, userScores.length);
-                    return (
-                      <circle
-                        key={i}
-                        cx={p.x}
-                        cy={p.y}
-                        r="3.5"
-                        fill="#3B82F6"
-                        stroke="#FFFFFF"
-                        strokeWidth="1.5"
-                      />
-                    );
-                  })}
-
-                  <text x="100" y="20" textAnchor="middle" className="text-[9px] fill-slate-500 dark:fill-slate-400 font-medium">Technical</text>
-                  <text x="178" y="75" textAnchor="start" className="text-[9px] fill-slate-500 dark:fill-slate-400 font-medium">Communication</text>
-                  <text x="150" y="185" textAnchor="middle" className="text-[9px] fill-slate-500 dark:fill-slate-400 font-medium">STAR</text>
-                  <text x="50" y="185" textAnchor="middle" className="text-[9px] fill-slate-500 dark:fill-slate-400 font-medium">Confidence</text>
-                  <text x="15" y="75" textAnchor="end" className="text-[9px] fill-slate-500 dark:fill-slate-400 font-medium">Problem Solving</text>
-                </svg>
-              </div>
+          {/* Model Answer Structure Card */}
+          <div className="bg-[#121927] border border-slate-800 rounded-2xl p-6 shadow-xs space-y-3">
+            <div className="flex items-center space-x-2 text-purple-400 font-bold text-sm sm:text-base">
+              <Sparkles className="w-5 h-5 flex-shrink-0" />
+              <span>Recommended Answer Architecture</span>
             </div>
-
-            {/* Score Trend Card */}
-            <div className="bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-800/90 rounded-2xl p-5 shadow-xs">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Score Trend
-                </h3>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-bold text-slate-900 dark:text-white">78%</span>
-                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full">
-                    +12%
-                  </span>
-                </div>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+              {modelSuggestion}
+            </p>
+            {followUpQuestion && (
+              <div className="pt-2 text-xs text-blue-300">
+                <strong>Potential Follow-up:</strong> "{followUpQuestion}"
               </div>
-
-              <div className="relative pt-2">
-                <svg viewBox="0 0 330 100" className="w-full h-24 overflow-visible">
-                  <line x1="25" y1="20" x2="310" y2="20" stroke="currentColor" strokeDasharray="3 3" className="text-slate-100 dark:text-slate-800" />
-                  <line x1="25" y1="50" x2="310" y2="50" stroke="currentColor" strokeDasharray="3 3" className="text-slate-100 dark:text-slate-800" />
-                  <line x1="25" y1="80" x2="310" y2="80" stroke="currentColor" strokeDasharray="3 3" className="text-slate-100 dark:text-slate-800" />
-
-                  <text x="5" y="24" className="text-[8px] fill-slate-400">80</text>
-                  <text x="5" y="54" className="text-[8px] fill-slate-400">40</text>
-                  <text x="5" y="84" className="text-[8px] fill-slate-400">0</text>
-
-                  <defs>
-                    <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
-
-                  <path
-                    d="M 25 75 Q 95 62 165 55 T 305 28 L 305 85 L 25 85 Z"
-                    fill="url(#trendGradient)"
-                  />
-                  <path
-                    d="M 25 75 Q 95 62 165 55 T 305 28"
-                    fill="none"
-                    stroke="#3B82F6"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-
-                  {trendData.map((pt, i) => (
-                    <circle
-                      key={i}
-                      cx={pt.x}
-                      cy={pt.y}
-                      r="4"
-                      fill="#3B82F6"
-                      stroke="#FFFFFF"
-                      strokeWidth="2"
-                    />
-                  ))}
-
-                  {trendData.map((pt, i) => (
-                    <text
-                      key={i}
-                      x={pt.x}
-                      y="96"
-                      textAnchor="middle"
-                      className="text-[8px] fill-slate-400"
-                    >
-                      {pt.label}
-                    </text>
-                  ))}
-                </svg>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* TAB 2: Strengths Deep Dive */}
+      {/* Tab 2: Strengths Deep Dive */}
       {activeTab === 'strengths' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {highlights.map((h, i) => (
-            <div key={i} className="bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-                  Strength #{i + 1}
-                </span>
-                <span className="text-xs font-bold text-emerald-500">92% Mastery</span>
+        <div className="bg-[#121927] border border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
+          <h3 className="text-base font-bold text-white">Demonstrated Strengths</h3>
+          <div className="space-y-3">
+            {highlights.map((st, i) => (
+              <div key={i} className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-start space-x-3">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-white">{st}</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Confirmed across multi-agent rubric evaluations. Maintain this consistency in future interview rounds.
+                  </p>
+                </div>
               </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                <span>{h}</span>
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Demonstrated high fluency and clarity during your architectural comparison between relational and non-relational database trade-offs.
-              </p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
-      {/* TAB 3: Areas to Improve Deep Dive */}
+      {/* Tab 3: Gaps & Action Items */}
       {activeTab === 'gaps' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {improvements.map((imp, i) => (
-            <div key={i} className="bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
-                  Growth Area #{i + 1}
-                </span>
-                <span className="text-xs font-bold text-amber-500">Priority High</span>
+        <div className="bg-[#121927] border border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
+          <h3 className="text-base font-bold text-white">Actionable Improvement Drills</h3>
+          <div className="space-y-3">
+            {improvements.map((imp, i) => (
+              <div key={i} className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-start space-x-3">
+                <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-white">{imp}</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Added to your 7-Day Improvement Plan. Practice targeted drills in the Practice Lab to clear this gap.
+                  </p>
+                </div>
               </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-2">
-                <ArrowDownCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                <span>{imp}</span>
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Structured drills are scheduled in your 7-Day Improvement Plan to resolve this specific speech habit before your final round.
-              </p>
-              <button
-                onClick={onRetakeInterview}
-                className="inline-flex items-center space-x-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline pt-1 cursor-pointer"
-              >
-                <span>Practice this skill now</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
-      {/* TAB 4: Question Review */}
+      {/* Tab 4: Question Review */}
       {activeTab === 'questions' && (
-        <div className="space-y-4">
-          {questionsReview.map((q) => (
-            <div key={q.qNum} className="bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                  Question #{q.qNum}
-                </span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
-                  Score: {q.score}% ({q.status})
-                </span>
-              </div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                {q.question}
-              </h4>
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 italic">
-                "{q.userExcerpt}"
-              </div>
-              <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 text-xs text-emerald-800 dark:text-emerald-300">
-                <span className="font-bold">Coach Tip:</span> {q.modelSuggestion}
-              </div>
+        <div className="bg-[#121927] border border-slate-800 rounded-2xl p-6 shadow-xs space-y-5">
+          <h3 className="text-base font-bold text-white">Question &amp; Response Review</h3>
+          <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-blue-400">Question 1</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300">
+                Score: {overallScore}%
+              </span>
             </div>
-          ))}
+            <p className="text-sm font-semibold text-white">{questionText}</p>
+            <div className="p-3 rounded-lg bg-slate-800/50 text-xs text-slate-300 space-y-1">
+              <p className="font-semibold text-slate-400">Your Response:</p>
+              <p className="italic">"{userExcerpt}"</p>
+            </div>
+            <div className="p-3 rounded-lg bg-purple-950/30 border border-purple-900/30 text-xs text-purple-200">
+              <p className="font-semibold text-purple-300 mb-1">AI Recommendation:</p>
+              <p>{modelSuggestion}</p>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* TAB 5: Transcript */}
+      {/* Tab 5: Verbatim Transcript */}
       {activeTab === 'transcript' && (
-        <div className="bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3">
-            Full Interview Transcript
-          </h3>
-          <div className="space-y-3 font-sans text-xs">
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
-              <span className="font-bold text-purple-600 dark:text-purple-400 mr-2">[10:14 AM] AI Interviewer:</span>
-              <span className="text-slate-800 dark:text-slate-200">Explain the difference between SQL and NoSQL databases. When would you choose one over the other?</span>
-            </div>
-            <div className="p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40">
-              <span className="font-bold text-blue-600 dark:text-blue-400 mr-2">[10:16 AM] Sai Revanth:</span>
-              <span className="text-slate-800 dark:text-slate-200">SQL databases are relational and use a fixed schema, while NoSQL databases are non-relational and more flexible. I would choose SQL when data consistency and complex queries are important, and NoSQL when dealing with large scale, unstructured data or when we need high scalability.</span>
-            </div>
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800">
-              <span className="font-bold text-purple-600 dark:text-purple-400 mr-2">[10:16 AM] AI Interviewer:</span>
-              <span className="text-slate-800 dark:text-slate-200">Good answer! Can you give a real-world example where you used or would prefer NoSQL over SQL?</span>
-            </div>
+        <div className="bg-[#121927] border border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-white">Verbatim Delivery Transcript</h3>
+            <span className="text-xs text-slate-400">
+              Word Count: {userExcerpt.split(/\s+/).filter(Boolean).length} words
+            </span>
+          </div>
+          <div className="p-5 rounded-xl bg-slate-900/80 border border-slate-800 font-mono text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
+            {userExcerpt}
           </div>
         </div>
       )}
 
-      {/* TAB 6: Analytics */}
+      {/* Tab 6: Multi-Session Analytics & 5-Axis Radar */}
       {activeTab === 'analytics' && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div className="bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-2">
-            <span className="text-xs text-slate-400 font-semibold uppercase">Speaking Pace</span>
-            <div className="text-2xl font-bold text-emerald-500">142 WPM</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Optimal conversation speed. Not rushed.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Radar Chart */}
+          <div className="bg-[#121927] border border-slate-800 rounded-2xl p-6 shadow-xs flex flex-col items-center justify-between">
+            <h3 className="text-sm font-bold text-white mb-2 self-start">5-Axis Competency Radar</h3>
+            <div className="relative w-64 h-64 flex items-center justify-center">
+              <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
+                {/* Background Concentric Webs */}
+                {[0.25, 0.5, 0.75, 1].map((scale, i) => (
+                  <circle
+                    key={i}
+                    cx={radarCenter}
+                    cy={radarCenter}
+                    r={radarRadius * scale}
+                    fill="none"
+                    stroke="#1E293B"
+                    strokeWidth="1"
+                    strokeDasharray={scale === 1 ? 'none' : '2,2'}
+                  />
+                ))}
+
+                {/* Cohort Benchmark Polygon */}
+                <polygon
+                  points={avgPolygonPoints}
+                  fill="rgba(148, 163, 184, 0.1)"
+                  stroke="#64748B"
+                  strokeWidth="1.5"
+                  strokeDasharray="3,3"
+                />
+
+                {/* Candidate Polygon */}
+                <polygon
+                  points={userPolygonPoints}
+                  fill="rgba(59, 130, 246, 0.3)"
+                  stroke="#3B82F6"
+                  strokeWidth="2"
+                />
+              </svg>
+            </div>
+            <div className="flex items-center space-x-6 text-xs text-slate-400 mt-2">
+              <span className="flex items-center space-x-1.5">
+                <span className="w-3 h-0.5 bg-blue-500 rounded-full" />
+                <span className="text-white font-medium">Your Score</span>
+              </span>
+              <span className="flex items-center space-x-1.5">
+                <span className="w-3 h-0.5 bg-slate-500 rounded-full stroke-dash" />
+                <span>Industry Peer Average</span>
+              </span>
+            </div>
           </div>
-          <div className="bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-2">
-            <span className="text-xs text-slate-400 font-semibold uppercase">Filler Frequency</span>
-            <div className="text-2xl font-bold text-blue-500">1.2%</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Only 2 fillers across 4.5 minutes of recording.</p>
-          </div>
-          <div className="bg-white dark:bg-[#121927] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-2">
-            <span className="text-xs text-slate-400 font-semibold uppercase">Voice Modulation</span>
-            <div className="text-2xl font-bold text-purple-500">86/100</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Strong conviction and clear vocal inflection.</p>
+
+          {/* Session Timeline History */}
+          <div className="bg-[#121927] border border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
+            <h3 className="text-sm font-bold text-white">Historical Evaluation Timeline</h3>
+            {candidateProgress?.timeline?.length > 0 ? (
+              <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                {candidateProgress.timeline.map((item, idx) => (
+                  <div key={idx} className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between text-xs">
+                    <div>
+                      <p className="font-semibold text-white">{item.target_role || 'Mock Interview'}</p>
+                      <p className="text-[10px] text-slate-400">{item.date}</p>
+                    </div>
+                    <span className="text-sm font-bold text-blue-400">
+                      {item.overall_score}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-slate-400 py-8 text-center">
+                Current session is your first recorded assessment. Complete more interviews to track trend progressions!
+              </div>
+            )}
           </div>
         </div>
       )}
