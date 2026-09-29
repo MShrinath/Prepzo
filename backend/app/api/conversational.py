@@ -56,15 +56,15 @@ def start_conversational_interview(
     candidate_id: str,
     mode: str = "role_practice",
     target_role: str = "SDE",
-    difficulty: str = "medium",
+    difficulty: Optional[str] = None,
     competency: Optional[str] = None,
     topics: Optional[str] = None,
-    question_count: int = 5,
+    question_count: Optional[int] = None,
     db: Session = Depends(get_db),
 ):
     """
     Start a conversational multi-turn interview session.
-    Returns the session info and the first question.
+    The number of questions and adaptive difficulty are autonomously decided by the LLM.
     """
     profile = _ensure_candidate(candidate_id, db, target_role=target_role)
 
@@ -75,17 +75,28 @@ def start_conversational_interview(
         except Exception:
             topics_list = [topics]
 
+    q_agent = QuestionAgent(db_session=db)
+    # LLM autonomously decides interview length & adaptive difficulty based on profile
+    plan = q_agent.determine_interview_plan(
+        mode=mode,
+        target_role=target_role or "SDE",
+        candidate_profile=profile.to_dict(),
+        resume_text=profile.bio or "",
+    )
+    llm_diff = plan["initial_difficulty"]
+    llm_count = plan["question_count"]
+
     session_id = f"conv_{uuid.uuid4().hex[:10]}"
     session = InterviewSession(
         session_id=session_id,
         candidate_id=candidate_id,
         mode=mode,
         target_role=target_role,
-        difficulty=difficulty,
+        difficulty=llm_diff,
         competency=competency,
         topics=json.dumps(topics_list) if topics_list else None,
         status="active",
-        question_count=min(max(question_count, 2), 10),  # Clamp between 2-10
+        question_count=llm_count,
         questions_asked=1,
         is_conversational=True,
     )
@@ -93,11 +104,10 @@ def start_conversational_interview(
     db.commit()
 
     # Generate first question
-    q_agent = QuestionAgent(db_session=db)
     q_output = q_agent.select_or_generate_question(
         mode=mode,
         target_role=target_role,
-        difficulty=difficulty,
+        difficulty=llm_diff,
         competency=competency,
         topics=topics_list,
         candidate_profile=profile.to_dict(),
@@ -106,13 +116,14 @@ def start_conversational_interview(
 
     session.current_question = q_output.question
     session.questions_history = json.dumps([q_output.question])
+    session.difficulty = q_output.difficulty or llm_diff
     db.commit()
 
     return {
         "session_id": session_id,
         "mode": mode,
         "target_role": target_role,
-        "difficulty": difficulty,
+        "difficulty": session.difficulty,
         "question": q_output.model_dump(),
         "question_number": 1,
         "total_questions": session.question_count,
@@ -195,6 +206,7 @@ def get_next_conversational_question(session_id: str, db: Session = Depends(get_
         q_hist.append(q_output.question)
     session.questions_history = json.dumps(q_hist)
     session.current_question = q_output.question
+    session.difficulty = q_output.difficulty or session.difficulty
     db.commit()
 
     return {

@@ -107,3 +107,29 @@ def test_coach_agent_synthesis():
     assert 0 <= feedback.overall_score <= 100
     assert len(feedback.actionable_advice) > 0
     assert feedback.follow_up_question is not None
+
+
+def test_question_agent_determine_interview_plan(db_session):
+    agent = QuestionAgent(db_session=db_session)
+    plan = agent.determine_interview_plan(
+        mode="role_practice",
+        target_role="SDE",
+        candidate_profile={"experience_years": 3},
+    )
+    assert "question_count" in plan
+    assert "initial_difficulty" in plan
+    assert 3 <= plan["question_count"] <= 6
+    assert plan["initial_difficulty"] in ["easy", "medium", "hard"]
+
+
+def test_question_agent_concise_question_enforcement():
+    # Should strip conversational preamble and keep it 1-2 lines
+    long_raw = "Sure! Here is a great interview question for you: How do you design an idempotent payment processing API to prevent duplicate charges when network timeouts occur?"
+    concise = QuestionAgent._enforce_concise_question(long_raw)
+    assert not concise.startswith("Sure!")
+    assert not concise.startswith("Here is")
+    # Verify line count is <= 2
+    lines = [line.strip() for line in concise.strip().split("\n") if line.strip()]
+    assert 1 <= len(lines) <= 2
+    assert "idempotent" in concise
+

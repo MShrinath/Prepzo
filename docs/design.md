@@ -54,3 +54,12 @@ The system maintains longitudinal candidate tracking across multiple sessions:
 - PostgreSQL / SQLite relational data store
 - Automatic frequency indexing for recurring gaps (identifying patterns appearing in $\ge 2$ sessions)
 - Adaptive 7-day personalized improvement plan generated from the candidate's historical gap profile.
+
+---
+
+## 6. Dataset Integration & Benchmark Validation
+
+In accordance with the Project 7 specification:
+- **Corpora Integration:** The question banks and evaluation criteria are curated and adapted from **RecruitView (Hugging Face)**, **Awesome Interview Questions (Hugging Face / GitHub)**, and **Continuum Open-Source Interview Questions (GitHub)**.
+- **Unified Schema:** Every question conforms to canonical attributes: `question`, `role`, `competency`, `difficulty`, `question_type`, `expected_competencies`, `evaluation_criteria`, and `follow_up_template`.
+- **Benchmark Corpus:** Automated regression testing runs against `data/evaluation/benchmark_dataset.json`, validating multi-agent consistency, deterministic scoring variance (0.0 points), and evidence attribution.

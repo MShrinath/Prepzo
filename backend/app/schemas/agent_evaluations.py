@@ -10,6 +10,8 @@ class QuestionAgentOutput(BaseModel):
     reason: str = Field(description="Explanation of why this question was chosen or generated")
     question_id: Optional[str] = None
     target_gap: Optional[str] = Field(default=None, description="The specific skill, technology, or domain gap being probed by this question")
+    context_type: Optional[str] = Field(default=None, description="'project_deep_dive', 'experience_probe', 'gap_probe', or 'role_scenario'")
+    resume_reference: Optional[str] = Field(default=None, description="The specific project, company, or metric from the resume referenced by this question")
 
 
 class CommunicationEvaluationOutput(BaseModel):
@@ -89,6 +91,22 @@ class ImprovementPlanOutput(BaseModel):
     items: List[ImprovementPlanItem]
 
 
+class SkillGapDetail(BaseModel):
+    skill_or_domain: str = Field(description="The specific skill, framework, or domain gap from the JD")
+    severity: str = Field(default="High", description="Critical, High, or Medium priority gap")
+    why_it_matters: str = Field(description="Why this skill or responsibility is vital for this JD and target role")
+    current_resume_status: str = Field(description="Observation of what is present or missing in the resume")
+    how_to_improve: str = Field(description="Actionable guidance on how to learn, practice, or bridge this gap")
+    recommended_projects_or_actions: List[str] = Field(default_factory=list, description="Concrete projects, architectures, or exercises to build and showcase")
+    talking_points: Optional[str] = Field(default=None, description="How candidate can frame their adjacent experience in the interview to address this gap")
+
+
+class StrategicRoadmapPhase(BaseModel):
+    phase: str = Field(description="Phase title, e.g. Phase 1: Rapid Ramp-up (Days 1-3)")
+    focus: str = Field(description="Core objective of this phase")
+    actions: List[str] = Field(default_factory=list, description="Specific action items, tools to master, or exercises")
+
+
 class GapAnalysisOutput(BaseModel):
     matched_skills: List[str] = Field(default_factory=list, description="Skills and competencies matched between resume and JD")
     missing_skills: List[str] = Field(default_factory=list, description="Skills, tools, or domain experience in the JD not found in the resume")
@@ -98,3 +116,5 @@ class GapAnalysisOutput(BaseModel):
     recommended_gap_probing_questions: List[str] = Field(default_factory=list, description="Behavioral or scenario questions probing gaps")
     role_fit_summary: Optional[str] = Field(default=None, description="Concise evaluation of overall candidate fit for the target role")
     match_score: Optional[int] = Field(default=70, description="Estimated match percentage (0 to 100) between resume and JD")
+    skill_gap_details: List[SkillGapDetail] = Field(default_factory=list, description="In-depth analysis of each key gap with recommendations on how to improve")
+    improvement_roadmap: List[StrategicRoadmapPhase] = Field(default_factory=list, description="Structured roadmap to bridge candidate's profile to the target JD")

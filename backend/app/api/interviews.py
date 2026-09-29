@@ -127,25 +127,36 @@ def start_interview_session(req: GenericInterviewStartRequest, db: Session = Dep
 def start_role_practice(req: RolePracticeStartRequest, db: Session = Depends(get_db)):
     profile = _ensure_candidate_profile(req.candidate_id, db, target_role=req.role)
 
+    q_agent = QuestionAgent(db_session=db)
+    # LLM autonomously decides question count and adaptive difficulty
+    plan = q_agent.determine_interview_plan(
+        mode="role_practice",
+        target_role=req.role or "SDE",
+        candidate_profile=profile.to_dict(),
+    )
+    llm_diff = plan["initial_difficulty"]
+    llm_count = plan["question_count"]
+
     session_id = f"sess_{uuid.uuid4().hex[:10]}"
     session = InterviewSession(
         session_id=session_id,
         candidate_id=req.candidate_id,
         mode="role_practice",
         target_role=req.role,
-        difficulty=req.difficulty,
+        difficulty=llm_diff,
         competency=req.competency,
         status="active",
+        question_count=llm_count,
+        questions_asked=1,
     )
     db.add(session)
     db.commit()
 
-    # Select or generate initial question
-    q_agent = QuestionAgent(db_session=db)
+    # Select or generate initial question with LLM
     q_output = q_agent.select_or_generate_question(
         mode="role_practice",
         target_role=req.role,
-        difficulty=req.difficulty,
+        difficulty=llm_diff,
         competency=req.competency,
         candidate_profile=profile.to_dict(),
         previous_questions=[],
@@ -153,15 +164,16 @@ def start_role_practice(req: RolePracticeStartRequest, db: Session = Depends(get
 
     session.current_question = q_output.question
     session.questions_history = json.dumps([q_output.question])
-    session.questions_asked = 1
+    session.difficulty = q_output.difficulty or llm_diff
     db.commit()
 
     return {
         "session_id": session_id,
         "mode": "role_practice",
         "target_role": req.role,
-        "difficulty": req.difficulty,
+        "difficulty": session.difficulty,
         "question": q_output.model_dump(),
+        "total_questions": session.question_count,
     }
 
 
@@ -169,12 +181,12 @@ def start_role_practice(req: RolePracticeStartRequest, db: Session = Depends(get
 async def start_resume_jd_interview(
     candidate_id: str = Form(...),
     target_role: Optional[str] = Form("SDE"),
-    difficulty: Optional[str] = Form("medium"),
+    difficulty: Optional[str] = Form(None),
     job_description: str = Form(...),
     resume_file: Optional[UploadFile] = File(None),
     resume_text: Optional[str] = Form(None),
     is_conversational: Optional[bool] = Form(False),
-    question_count: Optional[int] = Form(5),
+    question_count: Optional[int] = Form(None),
     db: Session = Depends(get_db),
 ):
     role = target_role or "SDE"
@@ -196,28 +208,41 @@ async def start_resume_jd_interview(
     # Perform Gap Analysis using LLM
     gap_analysis = ResumeJDService.analyze_gap(extracted_resume_text, job_description, target_role=role)
 
+    q_agent = QuestionAgent(db_session=db)
+    # LLM autonomously decides interview length & difficulty based on resume and gap severity
+    plan = q_agent.determine_interview_plan(
+        mode="resume_jd",
+        target_role=role,
+        candidate_profile=profile.to_dict(),
+        resume_text=extracted_resume_text,
+        jd_text=job_description,
+        gap_analysis=gap_analysis,
+    )
+    llm_diff = plan["initial_difficulty"]
+    llm_count = plan["question_count"]
+
     session_id = f"sess_{uuid.uuid4().hex[:10]}"
     session = InterviewSession(
         session_id=session_id,
         candidate_id=candidate_id,
         mode="resume_jd",
         target_role=role,
-        difficulty=difficulty,
+        difficulty=llm_diff,
         resume_text=extracted_resume_text,
         jd_text=job_description,
         gap_analysis=json.dumps(gap_analysis),
         status="active",
         is_conversational=bool(is_conversational),
-        question_count=min(max(question_count or 5, 2), 10),
+        question_count=llm_count,
+        questions_asked=1,
     )
     db.add(session)
     db.commit()
 
-    q_agent = QuestionAgent(db_session=db)
     q_output = q_agent.select_or_generate_question(
         mode="resume_jd",
         target_role=role,
-        difficulty=difficulty,
+        difficulty=llm_diff,
         resume_text=extracted_resume_text,
         jd_text=job_description,
         candidate_profile=profile.to_dict(),
@@ -226,14 +251,14 @@ async def start_resume_jd_interview(
 
     session.current_question = q_output.question
     session.questions_history = json.dumps([q_output.question])
-    session.questions_asked = 1
+    session.difficulty = q_output.difficulty or llm_diff
     db.commit()
 
     return {
         "session_id": session_id,
         "mode": "resume_jd",
         "target_role": role,
-        "difficulty": difficulty,
+        "difficulty": session.difficulty,
         "gap_analysis": gap_analysis,
         "question": q_output.model_dump(),
         "is_conversational": session.is_conversational,
@@ -246,24 +271,35 @@ async def start_resume_jd_interview(
 def start_hr_interview(req: HRStartRequest, db: Session = Depends(get_db)):
     profile = _ensure_candidate_profile(req.candidate_id, db, target_role="HR Behavioral")
 
+    q_agent = QuestionAgent(db_session=db)
+    # LLM autonomously decides interview length & difficulty
+    plan = q_agent.determine_interview_plan(
+        mode="hr",
+        target_role="HR Behavioral",
+        candidate_profile=profile.to_dict(),
+    )
+    llm_diff = plan["initial_difficulty"]
+    llm_count = plan["question_count"]
+
     session_id = f"sess_{uuid.uuid4().hex[:10]}"
     session = InterviewSession(
         session_id=session_id,
         candidate_id=req.candidate_id,
         mode="hr",
         target_role="HR Behavioral",
-        difficulty=req.difficulty,
+        difficulty=llm_diff,
         topics=json.dumps(req.topics),
         status="active",
+        question_count=llm_count,
+        questions_asked=1,
     )
     db.add(session)
     db.commit()
 
-    q_agent = QuestionAgent(db_session=db)
     q_output = q_agent.select_or_generate_question(
         mode="hr",
         target_role="HR",
-        difficulty=req.difficulty,
+        difficulty=llm_diff,
         topics=req.topics,
         candidate_profile=profile.to_dict(),
         previous_questions=[],
@@ -271,15 +307,16 @@ def start_hr_interview(req: HRStartRequest, db: Session = Depends(get_db)):
 
     session.current_question = q_output.question
     session.questions_history = json.dumps([q_output.question])
-    session.questions_asked = 1
+    session.difficulty = q_output.difficulty or llm_diff
     db.commit()
 
     return {
         "session_id": session_id,
         "mode": "hr",
-        "difficulty": req.difficulty,
+        "difficulty": session.difficulty,
         "topics": req.topics,
         "question": q_output.model_dump(),
+        "total_questions": session.question_count,
     }
 
 
@@ -406,6 +443,7 @@ def get_next_question_for_session(session_id: str, db: Session = Depends(get_db)
         q_hist.append(q_output.question)
     session.questions_history = json.dumps(q_hist)
     session.current_question = q_output.question
+    session.difficulty = q_output.difficulty or session.difficulty
     session.questions_asked = (session.questions_asked or 0) + 1
     db.commit()
 

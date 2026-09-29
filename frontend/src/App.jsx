@@ -6,11 +6,11 @@ import ConversationalInterview from './components/ConversationalInterview';
 import FeedbackView from './components/FeedbackView';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import ProfileView from './components/ProfileView';
-import StoryBank from './components/StoryBank';
+import PreparationRoadmap from './components/PreparationRoadmap';
 import { fetchCandidateProfile, fetchNextQuestion } from './services/api';
 
 export default function App() {
-  const [currentView, setView] = useState('modes'); // 'modes' | 'interview' | 'conversational' | 'feedback' | 'dashboard' | 'profile' | 'storybank'
+  const [currentView, setView] = useState('modes'); // 'modes' | 'interview' | 'conversational' | 'feedback' | 'dashboard' | 'profile' | 'roadmap'
   const [candidate, setCandidate] = useState({
     candidate_id: 'candidate_001',
     name: 'Alex Taylor',
@@ -116,8 +116,8 @@ export default function App() {
           />
         )}
 
-        {currentView === 'storybank' && (
-          <StoryBank
+        {currentView === 'roadmap' && (
+          <PreparationRoadmap
             candidate={candidate}
           />
         )}

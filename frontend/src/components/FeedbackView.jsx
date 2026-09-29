@@ -2,18 +2,17 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   CheckCircle2, ArrowRight, Sparkles, MessageSquare,
   Award, ShieldAlert, CornerDownRight, RotateCcw, Send, Volume2,
-  ChevronRight, ArrowLeft, Download, BookOpen, Check, Mic, MicOff,
+  ChevronRight, ArrowLeft, Download, Check, Mic, MicOff,
   Square, Play, Gauge, Target, TrendingUp, Zap, Radio
 } from 'lucide-react';
-import { submitFollowUpAnswer, saveStory, exportSessionPDF } from '../services/api';
+import { submitFollowUpAnswer, exportSessionPDF } from '../services/api';
+import SkillGapReport from './SkillGapReport';
 
 export default function FeedbackView({ evaluationData, candidate, sessionData, onNextQuestion, onExit }) {
   const [followUpAnswer, setFollowUpAnswer] = useState('');
   const [submittingFollowUp, setSubmittingFollowUp] = useState(false);
   const [followUpFeedback, setFollowUpFeedback] = useState(null);
 
-  const [isSavingStory, setIsSavingStory] = useState(false);
-  const [storySaved, setStorySaved] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
 
@@ -25,7 +24,6 @@ export default function FeedbackView({ evaluationData, candidate, sessionData, o
   const [shadowLiveTranscript, setShadowLiveTranscript] = useState('');
   const [shadowDurationSec, setShadowDurationSec] = useState(0);
   const [shadowResults, setShadowResults] = useState({});
-  const [shadowStorySaved, setShadowStorySaved] = useState(false);
 
   const shadowTimerRef = useRef(null);
   const shadowStartTimeRef = useRef(null);
@@ -75,43 +73,6 @@ export default function FeedbackView({ evaluationData, candidate, sessionData, o
       console.error("Failed to submit follow-up:", err);
     } finally {
       setSubmittingFollowUp(false);
-    }
-  };
-
-  const handleSaveStory = async () => {
-    if (!evaluationData?.session_id || !candidate) return;
-    setIsSavingStory(true);
-    try {
-      await saveStory(candidate.id || candidate.candidate_id || 'candidate_001', {
-        title: questionText.substring(0, 50) + '...',
-        question: questionText,
-        original_response: responseText,
-        improved_response: coach.improved_answer_structure || '',
-        tags: [star.applicable ? 'Behavioral' : 'Technical', 'Improved Structure'],
-      });
-      setStorySaved(true);
-      setTimeout(() => setStorySaved(false), 3000);
-    } catch (err) {
-      console.error('Failed to save story:', err);
-    } finally {
-      setIsSavingStory(false);
-    }
-  };
-
-  const handleSaveShadowedStory = async () => {
-    if (!candidate) return;
-    try {
-      await saveStory(candidate.id || candidate.candidate_id || 'candidate_001', {
-        title: `Cadence Mastered: ${questionText.substring(0, 45)}...`,
-        question: questionText,
-        original_response: responseText,
-        improved_response: coach.improved_answer_structure || '',
-        tags: ['Cadence Shadowed', '135 WPM Benchmark', star.applicable ? 'Behavioral' : 'Technical'],
-      });
-      setShadowStorySaved(true);
-      setTimeout(() => setShadowStorySaved(false), 3000);
-    } catch (err) {
-      console.error('Failed to save shadowed story:', err);
     }
   };
 
@@ -375,6 +336,15 @@ export default function FeedbackView({ evaluationData, candidate, sessionData, o
         </div>
       </div>
 
+      {/* Resume & Job Skill Gap & Improvement Report */}
+      {(sessionData?.gap_analysis || evaluationData?.gap_analysis) && (
+        <SkillGapReport
+          gapAnalysis={sessionData?.gap_analysis || evaluationData?.gap_analysis}
+          currentQuestion={{ question: questionText }}
+          isOpenDefault={false}
+        />
+      )}
+
       {/* Tri-Agent Breakdown Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* 1. Communication Agent */}
@@ -601,17 +571,6 @@ export default function FeedbackView({ evaluationData, candidate, sessionData, o
                 <Gauge className="w-3.5 h-3.5" />
                 <span>{shadowStudioOpen ? 'Close Shadow Studio' : 'Shadow Executive Cadence'}</span>
               </button>
-
-              <button
-                onClick={handleSaveStory}
-                disabled={isSavingStory || storySaved}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition ${
-                  storySaved ? 'bg-[#30D158]/20 text-[#30D158]' : 'bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 text-[#0A84FF]'
-                }`}
-              >
-                {storySaved ? <Check className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
-                <span>{storySaved ? 'Saved to Story Bank' : 'Save to Story Bank'}</span>
-              </button>
             </div>
           </div>
 
@@ -764,23 +723,15 @@ export default function FeedbackView({ evaluationData, candidate, sessionData, o
                 )}
               </div>
 
-              {/* Progress and Story Bank Actions */}
-              <div className="flex flex-col sm:flex-row items-center justify-between pt-2 border-t border-white/[0.06] text-xs text-[#98989D] gap-3">
+              {/* Shadow Mastery Progress */}
+              <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs text-[#98989D]">
                 <div className="flex items-center space-x-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#30D158]" />
                   <span>
                     Mastery Progress: {Object.keys(shadowResults).length} of {sentences.length} sentences shadowed
                   </span>
                 </div>
-
-                <button
-                  onClick={handleSaveShadowedStory}
-                  disabled={shadowStorySaved}
-                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#30D158]/20 hover:bg-[#30D158]/30 text-[#30D158] border border-[#30D158]/30 transition"
-                >
-                  {shadowStorySaved ? <Check className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
-                  <span>{shadowStorySaved ? 'Cadence Mastered Story Saved!' : 'Save Cadence Mastered Story'}</span>
-                </button>
+                <span className="text-[11px] text-[#636366]">135 WPM Executive Cadence Standard</span>
               </div>
             </div>
           )}

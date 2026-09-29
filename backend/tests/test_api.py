@@ -126,3 +126,59 @@ def test_generic_interview_and_response():
     assert res.status_code == 200
     assert "coaching_feedback" in res.json()
 
+
+def test_candidate_login_and_capabilities():
+    # 1. Login with new ID (auto-registers)
+    login_payload = {
+        "candidate_id": "taylor_swift_eng",
+        "name": "Taylor Swift",
+        "target_role": "Backend Engineer",
+        "experience_years": 4
+    }
+    res = client.post("/api/candidates/login", json=login_payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["candidate_id"] == "taylor_swift_eng"
+    assert data["name"] == "Taylor Swift"
+
+    # 2. Get capabilities endpoint
+    res = client.get("/api/candidates/taylor_swift_eng/capabilities")
+    assert res.status_code == 200
+    caps = res.json()
+    assert "capabilities" in caps
+    assert isinstance(caps["capabilities"], list)
+    assert len(caps["capabilities"]) >= 5
+    assert "project_stats" in caps
+
+
+def test_candidate_resume_text_upload():
+    cand_id = "resume_test_cand"
+    # Seed candidate
+    client.post("/api/candidates/login", json={"candidate_id": cand_id, "name": "Resume Tester"})
+
+    resume_text = """
+    Alex Rivera - Senior Cloud & Backend Engineer
+    Skills: Python, Go, Docker, Kubernetes, AWS, PostgreSQL, Redis, FastAPI, Terraform
+    
+    Experience & Projects:
+    High-Throughput Ingestion Engine
+    Architected an event-driven streaming pipeline processing 15,000 RPS using FastAPI, Kafka, and Redis.
+    Decreased latency by 60% and scaled data throughput across 3 Kubernetes clusters.
+    """
+
+    res = client.post(
+        f"/api/candidates/{cand_id}/resume",
+        data={"resume_text": resume_text}
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["candidate_id"] == cand_id
+    assert "capabilities" in data
+    assert "profile_summary" in data
+    assert len(data["skills"]) >= 3
+    # Check that role matches include Backend and Cloud
+    roles = [rm["role_name"] for rm in data["capabilities"]]
+    assert "Software Development Engineer (SDE / Backend)" in roles
+    assert "DevOps & Cloud Engineer" in roles
+
+

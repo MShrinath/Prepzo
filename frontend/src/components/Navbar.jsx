@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, BarChart2, User, Mic2, BookOpen } from 'lucide-react';
+import { Play, BarChart2, User, Mic2, Compass } from 'lucide-react';
 
 export default function Navbar({ currentView, setView, candidate }) {
   const isPracticeActive = currentView === 'modes' || currentView === 'interview' || currentView === 'conversational';
@@ -52,15 +52,16 @@ export default function Navbar({ currentView, setView, candidate }) {
           </button>
 
           <button
-            onClick={() => setView('storybank')}
+            onClick={() => setView('roadmap')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center space-x-1.5 transition-all duration-200 ${
-              currentView === 'storybank'
+              currentView === 'roadmap'
                 ? 'bg-white/[0.14] text-white shadow-apple-pill font-semibold'
                 : 'text-[#98989D] hover:text-white'
             }`}
           >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Stories</span>
+            <Compass className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Roadmap &amp; Prep</span>
+            <span className="sm:hidden">Roadmap</span>
           </button>
 
           <button

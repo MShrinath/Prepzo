@@ -11,7 +11,6 @@ export default function ModeSelect({ onStartInterview, candidate }) {
     "DevOps Engineer", "Data Analyst", "Product Manager", "Sales", "Customer Success"
   ]);
   const [selectedRole, setSelectedRole] = useState("SDE");
-  const [selectedDifficulty, setSelectedDifficulty] = useState("medium");
   const [selectedCompetency, setSelectedCompetency] = useState("Problem Solving");
 
   // Mode 2 State
@@ -28,7 +27,6 @@ export default function ModeSelect({ onStartInterview, candidate }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [conversationalMode, setConversationalMode] = useState(true);
-  const [questionCount, setQuestionCount] = useState(5);
 
   useEffect(() => {
     fetchRoles()
@@ -44,9 +42,9 @@ export default function ModeSelect({ onStartInterview, candidate }) {
     try {
       let data;
       if (conversationalMode) {
-        data = await startConversationalInterview(candidate.candidate_id, 'role_practice', selectedRole, selectedDifficulty, selectedCompetency, questionCount);
+        data = await startConversationalInterview(candidate.candidate_id, 'role_practice', selectedRole, selectedCompetency);
       } else {
-        data = await startRolePractice(candidate.candidate_id, selectedRole, selectedDifficulty, selectedCompetency);
+        data = await startRolePractice(candidate.candidate_id, selectedRole, selectedCompetency);
       }
       onStartInterview(data);
     } catch (err) {
@@ -67,12 +65,10 @@ export default function ModeSelect({ onStartInterview, candidate }) {
       const data = await startResumeJDInterview(
         candidate.candidate_id,
         selectedRole,
-        selectedDifficulty,
         jdText,
         resumeFile,
         resumeTextInput,
-        conversationalMode,
-        questionCount
+        conversationalMode
       );
       onStartInterview(data);
     } catch (err) {
@@ -86,7 +82,7 @@ export default function ModeSelect({ onStartInterview, candidate }) {
     setLoading(true);
     setError(null);
     try {
-      const data = await startHRInterview(candidate.candidate_id, selectedDifficulty, hrTopics);
+      const data = await startHRInterview(candidate.candidate_id, hrTopics);
       onStartInterview(data);
     } catch (err) {
       setError(err.message);
@@ -252,7 +248,7 @@ export default function ModeSelect({ onStartInterview, candidate }) {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className="block text-xs font-medium text-[#98989D] mb-2">
                   Target Role
@@ -265,21 +261,6 @@ export default function ModeSelect({ onStartInterview, candidate }) {
                   {roles.map(r => (
                     <option key={r} value={r} className="bg-[#1C1C1E] text-white">{r}</option>
                   ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-[#98989D] mb-2">
-                  Difficulty
-                </label>
-                <select
-                  value={selectedDifficulty}
-                  onChange={(e) => setSelectedDifficulty(e.target.value)}
-                  className="w-full bg-[#1C1C1E] border border-white/[0.12] rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-[#0A84FF] transition"
-                >
-                  <option value="easy" className="bg-[#1C1C1E] text-white">Easy • Fundamentals</option>
-                  <option value="medium" className="bg-[#1C1C1E] text-white">Medium • Standard</option>
-                  <option value="hard" className="bg-[#1C1C1E] text-white">Hard • Senior / Staff</option>
                 </select>
               </div>
 
@@ -300,6 +281,11 @@ export default function ModeSelect({ onStartInterview, candidate }) {
               </div>
             </div>
 
+            <div className="flex items-center space-x-2.5 text-xs text-[#0A84FF] bg-[#0A84FF]/10 border border-[#0A84FF]/20 px-3.5 py-2 rounded-xl">
+              <Sparkles className="w-4 h-4 text-[#0A84FF] shrink-0" />
+              <span>AI Autonomous Calibration: Difficulty and session length (3-6 questions) are decided dynamically by the LLM based on role depth and your profile.</span>
+            </div>
+
             <div className="pt-4 border-t border-white/[0.08] space-y-4">
               {/* Conversational Mode Toggle */}
               <div className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] border border-white/[0.06]">
@@ -309,16 +295,10 @@ export default function ModeSelect({ onStartInterview, candidate }) {
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-white">Conversational Mode</p>
-                    <p className="text-[10px] text-[#98989D]">AI speaks questions aloud, {questionCount}-question multi-turn flow</p>
+                    <p className="text-[10px] text-[#98989D]">AI speaks questions aloud in a dynamically calibrated multi-turn flow</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  {conversationalMode && (
-                    <select value={questionCount} onChange={e => setQuestionCount(Number(e.target.value))}
-                      className="bg-[#1C1C1E] border border-white/[0.12] rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
-                      {[3,4,5,6,7,8].map(n => <option key={n} value={n}>{n} Qs</option>)}
-                    </select>
-                  )}
                   <button onClick={() => setConversationalMode(!conversationalMode)}
                     className={`w-11 h-6 rounded-full transition-colors relative ${
                       conversationalMode ? 'bg-[#BF5AF2]' : 'bg-white/[0.12]'
@@ -357,7 +337,7 @@ export default function ModeSelect({ onStartInterview, candidate }) {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-2 items-center">
               <div>
                 <label className="block text-xs font-medium text-[#98989D] mb-1.5">
                   Target Role
@@ -373,19 +353,9 @@ export default function ModeSelect({ onStartInterview, candidate }) {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-[#98989D] mb-1.5">
-                  Target Difficulty
-                </label>
-                <select
-                  value={selectedDifficulty}
-                  onChange={(e) => setSelectedDifficulty(e.target.value)}
-                  className="w-full bg-[#1C1C1E] border border-white/[0.12] rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#30D158] transition"
-                >
-                  <option value="easy" className="bg-[#1C1C1E] text-white">Easy • Fundamentals</option>
-                  <option value="medium" className="bg-[#1C1C1E] text-white">Medium • Standard</option>
-                  <option value="hard" className="bg-[#1C1C1E] text-white">Hard • Senior / Staff</option>
-                </select>
+              <div className="flex items-center space-x-2 text-xs text-[#30D158] bg-[#30D158]/10 border border-[#30D158]/20 px-3 py-2.5 rounded-xl sm:mt-5">
+                <Sparkles className="w-3.5 h-3.5 text-[#30D158] shrink-0" />
+                <span>AI evaluates resume gaps to autonomously calibrate difficulty and question sequence.</span>
               </div>
             </div>
 
@@ -454,12 +424,6 @@ export default function ModeSelect({ onStartInterview, candidate }) {
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  {conversationalMode && (
-                    <select value={questionCount} onChange={e => setQuestionCount(Number(e.target.value))}
-                      className="bg-[#1C1C1E] border border-white/[0.12] rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
-                      {[3,4,5,6,7,8].map(n => <option key={n} value={n}>{n} Qs</option>)}
-                    </select>
-                  )}
                   <button onClick={() => setConversationalMode(!conversationalMode)}
                     className={`w-11 h-6 rounded-full transition-colors relative ${
                       conversationalMode ? 'bg-[#30D158]' : 'bg-white/[0.12]'

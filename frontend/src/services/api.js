@@ -22,25 +22,58 @@ export async function updateCandidateProfile(candidateId, data) {
   return res.json();
 }
 
-export async function startRolePractice(candidateId, role, difficulty = 'medium', competency = null) {
+export async function loginCandidate(loginData) {
+  const res = await fetch(`${BASE_URL}/api/candidates/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(loginData),
+  });
+  if (!res.ok) throw new Error('Failed to log in');
+  return res.json();
+}
+
+export async function uploadCandidateResume(candidateId, file, resumeText) {
+  const formData = new FormData();
+  if (file) {
+    formData.append('resume_file', file);
+  }
+  if (resumeText) {
+    formData.append('resume_text', resumeText);
+  }
+  const res = await fetch(`${BASE_URL}/api/candidates/${candidateId}/resume`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || 'Failed to upload and parse resume');
+  }
+  return res.json();
+}
+
+export async function fetchCandidateCapabilities(candidateId) {
+  const res = await fetch(`${BASE_URL}/api/candidates/${candidateId}/capabilities`);
+  if (!res.ok) throw new Error('Failed to fetch capabilities');
+  return res.json();
+}
+
+export async function startRolePractice(candidateId, role, competency = null) {
   const res = await fetch(`${BASE_URL}/api/interviews/role-practice`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ candidate_id: candidateId, role, difficulty, competency }),
+    body: JSON.stringify({ candidate_id: candidateId, role, competency }),
   });
   if (!res.ok) throw new Error('Failed to start role practice');
   return res.json();
 }
 
-export async function startResumeJDInterview(candidateId, targetRole, difficulty, jobDescription, resumeFile, resumeText, isConversational = false, questionCount = 5) {
+export async function startResumeJDInterview(candidateId, targetRole, jobDescription, resumeFile, resumeText, isConversational = false) {
   const formData = new FormData();
   formData.append('candidate_id', candidateId);
   formData.append('target_role', targetRole || 'SDE');
-  formData.append('difficulty', difficulty || 'medium');
   formData.append('job_description', jobDescription);
   if (isConversational) {
     formData.append('is_conversational', 'true');
-    formData.append('question_count', String(questionCount || 5));
   }
   if (resumeFile) {
     formData.append('resume_file', resumeFile);
@@ -57,11 +90,11 @@ export async function startResumeJDInterview(candidateId, targetRole, difficulty
   return res.json();
 }
 
-export async function startHRInterview(candidateId, difficulty = 'medium', topics = ['conflict_resolution', 'receiving_feedback']) {
+export async function startHRInterview(candidateId, topics = ['conflict_resolution', 'receiving_feedback']) {
   const res = await fetch(`${BASE_URL}/api/interviews/hr`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ candidate_id: candidateId, difficulty, topics }),
+    body: JSON.stringify({ candidate_id: candidateId, topics }),
   });
   if (!res.ok) throw new Error('Failed to start HR round');
   return res.json();
@@ -168,13 +201,11 @@ export async function clearCandidateSessions(candidateId = 'candidate_001') {
 
 // ===== Conversational Interview APIs =====
 
-export async function startConversationalInterview(candidateId, mode = 'role_practice', targetRole = 'SDE', difficulty = 'medium', competency = null, questionCount = 5) {
+export async function startConversationalInterview(candidateId, mode = 'role_practice', targetRole = 'SDE', competency = null) {
   const params = new URLSearchParams({
     candidate_id: candidateId,
     mode,
     target_role: targetRole,
-    difficulty,
-    question_count: String(questionCount),
   });
   if (competency) params.append('competency', competency);
 

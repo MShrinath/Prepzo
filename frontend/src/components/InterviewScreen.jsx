@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Mic, MicOff, Send, Volume2, Type, Sparkles, AlertCircle,
-  ChevronLeft, RefreshCw, CheckCircle2, Square, RotateCcw, Loader2, Target
+  ChevronLeft, RefreshCw, CheckCircle2, Square, RotateCcw, Loader2, Target,
+  FolderGit2, Briefcase
 } from 'lucide-react';
 import { submitTextResponse, submitVoiceResponse } from '../services/api';
 import VocalHUD from './VocalHUD';
+import SkillGapReport from './SkillGapReport';
 
 export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluation }) {
   const [responseMode, setResponseMode] = useState('voice'); // 'voice' | 'text'
@@ -208,96 +210,13 @@ export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluat
         </div>
       )}
 
-      {/* Resume & Job Match Intelligence Panel */}
+      {/* Resume & Job Match Intelligence & Improvement Report */}
       {sessionData?.gap_analysis && (
-        <div className="mb-6 p-5 rounded-3xl bg-white/[0.03] border border-[#30D158]/30 shadow-apple-card backdrop-blur-2xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-white/[0.08] gap-2 mb-3">
-            <div className="flex items-center space-x-2 text-[#30D158] font-semibold text-xs uppercase tracking-wide">
-              <Sparkles className="w-4 h-4 text-[#30D158]" />
-              <span>Resume ↔ Job Match Evaluation</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              {sessionData.gap_analysis.match_score !== undefined && (
-                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#30D158]/15 text-[#30D158] border border-[#30D158]/30">
-                  {sessionData.gap_analysis.match_score}% Fit Score
-                </span>
-              )}
-              {sessionData.gap_analysis.experience_level_match && (
-                <span className="text-[11px] text-[#98989D] px-2.5 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.08]">
-                  {sessionData.gap_analysis.experience_level_match}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {sessionData.gap_analysis.role_fit_summary && (
-            <p className="text-xs text-[#D1D1D6] leading-relaxed mb-4">
-              {sessionData.gap_analysis.role_fit_summary}
-            </p>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-            {sessionData.gap_analysis.matched_skills?.length > 0 && (
-              <div className="p-3 rounded-2xl bg-[#30D158]/10 border border-[#30D158]/20">
-                <div className="text-[11px] font-semibold text-[#30D158] mb-1.5 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Verified Resume Strengths</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {sessionData.gap_analysis.matched_skills.map((s, idx) => (
-                    <span key={idx} className="px-2 py-0.5 rounded-lg bg-[#30D158]/20 text-[#30D158] text-[10px] font-medium">
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {sessionData.gap_analysis.missing_skills?.length > 0 && (
-              <div className="p-3 rounded-2xl bg-[#FF9F0A]/10 border border-[#FF9F0A]/20">
-                <div className="text-[11px] font-semibold text-[#FF9F0A] mb-1.5 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    <span>Identified Gaps (Interview Focus)</span>
-                  </span>
-                  <span className="text-[9px] uppercase tracking-wider text-[#FF9F0A]/80 font-medium">Probing in Questions</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {sessionData.gap_analysis.missing_skills.map((s, idx) => {
-                    const isCurrentFocus = questionObj.target_gap && (
-                      s.toLowerCase().includes(questionObj.target_gap.toLowerCase()) ||
-                      questionObj.target_gap.toLowerCase().includes(s.toLowerCase())
-                    );
-                    return (
-                      <span
-                        key={idx}
-                        className={`px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all ${
-                          isCurrentFocus
-                            ? "bg-[#FF9F0A] text-black font-bold ring-2 ring-[#FF9F0A]/60 shadow-sm"
-                            : "bg-[#FF9F0A]/20 text-[#FF9F0A]"
-                        }`}
-                      >
-                        {isCurrentFocus && "🎯 "}
-                        {s}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {questionObj.target_gap && (
-            <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-xs text-[#98989D]">
-              <span className="flex items-center space-x-1.5">
-                <Target className="w-3.5 h-3.5 text-[#FF9F0A]" />
-                <span>Current Question Probing:</span>
-                <strong className="text-[#FF9F0A]">{questionObj.target_gap}</strong>
-              </span>
-              <span className="text-[11px] text-[#636366]">Gap Validation Stage</span>
-            </div>
-          )}
-        </div>
+        <SkillGapReport
+          gapAnalysis={sessionData.gap_analysis}
+          currentQuestion={questionObj}
+          isOpenDefault={false}
+        />
       )}
 
       {/* Prompter Card */}
@@ -311,10 +230,25 @@ export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluat
           </span>
         </div>
 
-        {questionObj.target_gap && (
+        {/* Dynamic Context & Project Badges */}
+        {questionObj.context_type === 'project_deep_dive' && (
+          <div className="mb-3 inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-[#0A84FF]/15 border border-[#0A84FF]/35 text-[#0A84FF] text-xs font-semibold">
+            <FolderGit2 className="w-3.5 h-3.5" />
+            <span>Resume Project Deep-Dive: <strong>{questionObj.resume_reference || "Claimed Project"}</strong></span>
+          </div>
+        )}
+
+        {questionObj.context_type === 'experience_probe' && (
+          <div className="mb-3 inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-[#BF5AF2]/15 border border-[#BF5AF2]/35 text-[#BF5AF2] text-xs font-semibold">
+            <Briefcase className="w-3.5 h-3.5" />
+            <span>Work Experience & Production Probe: <strong>{questionObj.resume_reference || "Past Experience"}</strong></span>
+          </div>
+        )}
+
+        {(questionObj.context_type === 'gap_probe' || questionObj.target_gap) && (
           <div className="mb-3 inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-[#FF9F0A]/15 border border-[#FF9F0A]/35 text-[#FF9F0A] text-xs font-semibold">
             <Target className="w-3.5 h-3.5" />
-            <span>Focus Gap Being Probed: <strong>{questionObj.target_gap}</strong></span>
+            <span>Bridging JD Gap: <strong>{questionObj.target_gap || questionObj.resume_reference}</strong></span>
           </div>
         )}
 
@@ -324,7 +258,7 @@ export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluat
 
         {questionObj.reason && (
           <div className="mt-4 pt-4 border-t border-white/[0.06] text-xs text-[#98989D] flex items-start space-x-1.5">
-            <span className="text-white font-medium shrink-0">Gap Evaluation Rationale:</span>
+            <span className="text-white font-medium shrink-0">Evaluation Focus:</span>
             <span className="text-[#D1D1D6]">{questionObj.reason}</span>
           </div>
         )}

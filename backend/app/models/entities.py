@@ -234,6 +234,7 @@ class CandidateResponse(Base):
             "content_evaluation": self.content_evaluation.to_dict() if self.content_evaluation else None,
             "star_evaluation": self.star_evaluation.to_dict() if self.star_evaluation else None,
             "coaching_feedback": self.coaching_feedback.to_dict() if self.coaching_feedback else None,
+            "gap_analysis": json.loads(self.session.gap_analysis) if (self.session and self.session.gap_analysis) else None,
         }
 
 
