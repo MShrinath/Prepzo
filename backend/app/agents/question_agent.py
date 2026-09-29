@@ -257,7 +257,9 @@ Rules:
             if not result.context_type:
                 result.context_type = "role_scenario"
             result.question = self._enforce_concise_question(result.question)
-            if not result.difficulty or result.difficulty.lower() not in ["easy", "medium", "hard"]:
+            if difficulty:
+                result.difficulty = difficulty
+            elif not result.difficulty or result.difficulty.lower() not in ["easy", "medium", "hard"]:
                 result.difficulty = inferred_diff
 
             # Save dynamically generated question to DB for indexing
