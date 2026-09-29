@@ -71,7 +71,7 @@ Coordinates specialized agents over a shared `InterviewState` typed dictionary w
 
 ## 🏛️ System Architecture
 
-![Architecture Diagram](docs/architecture.svg)
+![Architecture Diagram](docs/architecture.png)
 
 ```
 [Candidate: Voice/Text] ──> [FastAPI Backend] ──> [LangGraph State Machine]
