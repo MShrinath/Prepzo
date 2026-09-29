@@ -9,6 +9,7 @@ class QuestionAgentOutput(BaseModel):
     question_type: str = Field(description="technical, behavioral, or situational")
     reason: str = Field(description="Explanation of why this question was chosen or generated")
     question_id: Optional[str] = None
+    target_gap: Optional[str] = Field(default=None, description="The specific skill, technology, or domain gap being probed by this question")
 
 
 class CommunicationEvaluationOutput(BaseModel):
@@ -89,9 +90,11 @@ class ImprovementPlanOutput(BaseModel):
 
 
 class GapAnalysisOutput(BaseModel):
-    matched_skills: List[str]
-    missing_skills: List[str]
-    experience_level_match: str
-    tailored_focus_areas: List[str]
-    recommended_technical_questions: List[str]
-    recommended_gap_probing_questions: List[str]
+    matched_skills: List[str] = Field(default_factory=list, description="Skills and competencies matched between resume and JD")
+    missing_skills: List[str] = Field(default_factory=list, description="Skills, tools, or domain experience in the JD not found in the resume")
+    experience_level_match: str = Field(description="Assessment of seniority and experience level match")
+    tailored_focus_areas: List[str] = Field(default_factory=list, description="Key technical and behavioral focus areas for the interview")
+    recommended_technical_questions: List[str] = Field(default_factory=list, description="Technical questions tailored to resume claims and JD needs")
+    recommended_gap_probing_questions: List[str] = Field(default_factory=list, description="Behavioral or scenario questions probing gaps")
+    role_fit_summary: Optional[str] = Field(default=None, description="Concise evaluation of overall candidate fit for the target role")
+    match_score: Optional[int] = Field(default=70, description="Estimated match percentage (0 to 100) between resume and JD")

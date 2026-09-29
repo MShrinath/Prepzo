@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   Briefcase, FileText, Users, ArrowRight, ShieldCheck,
-  Upload, Sparkles, CheckCircle2, ChevronRight, Play, Loader2
+  Upload, Sparkles, CheckCircle2, ChevronRight, Play, Loader2, MessageCircle
 } from 'lucide-react';
-import { fetchRoles, startRolePractice, startResumeJDInterview, startHRInterview } from '../services/api';
+import { fetchRoles, startRolePractice, startResumeJDInterview, startHRInterview, startConversationalInterview } from '../services/api';
 
 export default function ModeSelect({ onStartInterview, candidate }) {
   const [roles, setRoles] = useState([
@@ -27,6 +27,8 @@ export default function ModeSelect({ onStartInterview, candidate }) {
   const [activeTab, setActiveTab] = useState("role"); // 'role' | 'resume' | 'hr'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [conversationalMode, setConversationalMode] = useState(true);
+  const [questionCount, setQuestionCount] = useState(5);
 
   useEffect(() => {
     fetchRoles()
@@ -40,7 +42,12 @@ export default function ModeSelect({ onStartInterview, candidate }) {
     setLoading(true);
     setError(null);
     try {
-      const data = await startRolePractice(candidate.candidate_id, selectedRole, selectedDifficulty, selectedCompetency);
+      let data;
+      if (conversationalMode) {
+        data = await startConversationalInterview(candidate.candidate_id, 'role_practice', selectedRole, selectedDifficulty, selectedCompetency, questionCount);
+      } else {
+        data = await startRolePractice(candidate.candidate_id, selectedRole, selectedDifficulty, selectedCompetency);
+      }
       onStartInterview(data);
     } catch (err) {
       setError(err.message);
@@ -63,7 +70,9 @@ export default function ModeSelect({ onStartInterview, candidate }) {
         selectedDifficulty,
         jdText,
         resumeFile,
-        resumeTextInput
+        resumeTextInput,
+        conversationalMode,
+        questionCount
       );
       onStartInterview(data);
     } catch (err) {
@@ -291,15 +300,46 @@ export default function ModeSelect({ onStartInterview, candidate }) {
               </div>
             </div>
 
-            <div className="pt-4 flex items-center justify-end border-t border-white/[0.08]">
-              <button
-                disabled={loading}
-                onClick={handleStartRolePractice}
-                className="w-full sm:w-auto bg-[#0A84FF] hover:bg-[#0071E3] active:scale-[0.98] text-white font-medium px-6 py-2.5 rounded-full shadow-apple-pill flex items-center justify-center space-x-2 transition disabled:opacity-50"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
-                <span>Start Practice Session</span>
-              </button>
+            <div className="pt-4 border-t border-white/[0.08] space-y-4">
+              {/* Conversational Mode Toggle */}
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] border border-white/[0.06]">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-[#BF5AF2]/15 border border-[#BF5AF2]/30 flex items-center justify-center">
+                    <MessageCircle className="w-4 h-4 text-[#BF5AF2]" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-white">Conversational Mode</p>
+                    <p className="text-[10px] text-[#98989D]">AI speaks questions aloud, {questionCount}-question multi-turn flow</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  {conversationalMode && (
+                    <select value={questionCount} onChange={e => setQuestionCount(Number(e.target.value))}
+                      className="bg-[#1C1C1E] border border-white/[0.12] rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
+                      {[3,4,5,6,7,8].map(n => <option key={n} value={n}>{n} Qs</option>)}
+                    </select>
+                  )}
+                  <button onClick={() => setConversationalMode(!conversationalMode)}
+                    className={`w-11 h-6 rounded-full transition-colors relative ${
+                      conversationalMode ? 'bg-[#BF5AF2]' : 'bg-white/[0.12]'
+                    }`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
+                      conversationalMode ? 'left-[22px]' : 'left-0.5'
+                    }`} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end">
+                <button
+                  disabled={loading}
+                  onClick={handleStartRolePractice}
+                  className="w-full sm:w-auto bg-[#0A84FF] hover:bg-[#0071E3] active:scale-[0.98] text-white font-medium px-6 py-2.5 rounded-full shadow-apple-pill flex items-center justify-center space-x-2 transition disabled:opacity-50"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : conversationalMode ? <MessageCircle className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
+                  <span>{conversationalMode ? 'Start Conversation' : 'Start Practice Session'}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -315,6 +355,38 @@ export default function ModeSelect({ onStartInterview, candidate }) {
               <span className="self-start sm:self-auto text-xs px-3 py-1 rounded-full bg-white/[0.06] text-[#30D158] border border-white/[0.08]">
                 Grounded Gap Probing
               </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-2">
+              <div>
+                <label className="block text-xs font-medium text-[#98989D] mb-1.5">
+                  Target Role
+                </label>
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="w-full bg-[#1C1C1E] border border-white/[0.12] rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#30D158] transition"
+                >
+                  {roles.map(r => (
+                    <option key={r} value={r} className="bg-[#1C1C1E] text-white">{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#98989D] mb-1.5">
+                  Target Difficulty
+                </label>
+                <select
+                  value={selectedDifficulty}
+                  onChange={(e) => setSelectedDifficulty(e.target.value)}
+                  className="w-full bg-[#1C1C1E] border border-white/[0.12] rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-[#30D158] transition"
+                >
+                  <option value="easy" className="bg-[#1C1C1E] text-white">Easy • Fundamentals</option>
+                  <option value="medium" className="bg-[#1C1C1E] text-white">Medium • Standard</option>
+                  <option value="hard" className="bg-[#1C1C1E] text-white">Hard • Senior / Staff</option>
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -369,15 +441,46 @@ export default function ModeSelect({ onStartInterview, candidate }) {
               </div>
             </div>
 
-            <div className="pt-4 flex items-center justify-end border-t border-white/[0.08]">
-              <button
-                disabled={loading}
-                onClick={handleStartResumeJD}
-                className="w-full sm:w-auto bg-[#30D158] hover:bg-[#28B046] active:scale-[0.98] text-black font-semibold px-6 py-2.5 rounded-full shadow-apple-pill flex items-center justify-center space-x-2 transition disabled:opacity-50"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <Play className="w-4 h-4 fill-current text-black" />}
-                <span>Analyze and Start</span>
-              </button>
+            {/* Conversational Mode Toggle for Track 2 */}
+            <div className="pt-4 border-t border-white/[0.08] space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] border border-white/[0.06]">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-[#30D158]/15 border border-[#30D158]/30 flex items-center justify-center">
+                    <MessageCircle className="w-4 h-4 text-[#30D158]" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-white">Conversational Mode</p>
+                    <p className="text-[10px] text-[#98989D]">AI conducts multi-turn spoken interview with tailored gap probing</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  {conversationalMode && (
+                    <select value={questionCount} onChange={e => setQuestionCount(Number(e.target.value))}
+                      className="bg-[#1C1C1E] border border-white/[0.12] rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
+                      {[3,4,5,6,7,8].map(n => <option key={n} value={n}>{n} Qs</option>)}
+                    </select>
+                  )}
+                  <button onClick={() => setConversationalMode(!conversationalMode)}
+                    className={`w-11 h-6 rounded-full transition-colors relative ${
+                      conversationalMode ? 'bg-[#30D158]' : 'bg-white/[0.12]'
+                    }`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow absolute top-0.5 transition-all ${
+                      conversationalMode ? 'left-[22px]' : 'left-0.5'
+                    }`} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end">
+                <button
+                  disabled={loading}
+                  onClick={handleStartResumeJD}
+                  className="w-full sm:w-auto bg-[#30D158] hover:bg-[#28B046] active:scale-[0.98] text-black font-semibold px-6 py-2.5 rounded-full shadow-apple-pill flex items-center justify-center space-x-2 transition disabled:opacity-50"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : conversationalMode ? <MessageCircle className="w-4 h-4 text-black" /> : <Play className="w-4 h-4 fill-current text-black" />}
+                  <span>{conversationalMode ? 'Start AI Conversation' : 'Analyze and Start'}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}

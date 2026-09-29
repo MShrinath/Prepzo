@@ -128,7 +128,31 @@ def seed_defaults():
         db.close()
 
 
+def _migrate_add_columns():
+    """Safely add new columns to existing tables for development migration."""
+    from sqlalchemy import text
+    migrations = [
+        "ALTER TABLE interview_sessions ADD COLUMN question_count INTEGER DEFAULT 5",
+        "ALTER TABLE interview_sessions ADD COLUMN questions_asked INTEGER DEFAULT 0",
+        "ALTER TABLE interview_sessions ADD COLUMN is_conversational BOOLEAN DEFAULT 0",
+        "ALTER TABLE interview_sessions ADD COLUMN questions_history TEXT DEFAULT '[]'",
+        "ALTER TABLE interview_sessions ADD COLUMN current_question TEXT DEFAULT NULL",
+    ]
+    with engine.connect() as conn:
+        for sql in migrations:
+            try:
+                conn.execute(text(sql))
+                conn.commit()
+            except Exception:
+                # Column already exists or table doesn't exist yet
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
+    _migrate_add_columns()
     seed_defaults()
 

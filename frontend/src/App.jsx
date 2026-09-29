@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import ModeSelect from './components/ModeSelect';
 import InterviewScreen from './components/InterviewScreen';
+import ConversationalInterview from './components/ConversationalInterview';
 import FeedbackView from './components/FeedbackView';
-import ProgressDashboard from './components/ProgressDashboard';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 import ProfileView from './components/ProfileView';
+import StoryBank from './components/StoryBank';
 import { fetchCandidateProfile, fetchNextQuestion } from './services/api';
 
 export default function App() {
-  const [currentView, setView] = useState('modes'); // 'modes' | 'interview' | 'feedback' | 'dashboard' | 'profile'
+  const [currentView, setView] = useState('modes'); // 'modes' | 'interview' | 'conversational' | 'feedback' | 'dashboard' | 'profile' | 'storybank'
   const [candidate, setCandidate] = useState({
     candidate_id: 'candidate_001',
     name: 'Alex Taylor',
@@ -30,7 +32,11 @@ export default function App() {
 
   const handleStartInterview = (newSession) => {
     setSessionData(newSession);
-    setView('interview');
+    if (newSession.is_conversational) {
+      setView('conversational');
+    } else {
+      setView('interview');
+    }
   };
 
   const handleEvaluationComplete = (result) => {
@@ -79,16 +85,26 @@ export default function App() {
           />
         )}
 
+        {currentView === 'conversational' && sessionData && (
+          <ConversationalInterview
+            sessionData={sessionData}
+            onBack={() => setView('modes')}
+            onComplete={() => setView('dashboard')}
+          />
+        )}
+
         {currentView === 'feedback' && evaluationResult && (
           <FeedbackView
             evaluationData={evaluationResult}
+            candidate={candidate}
+            sessionData={sessionData}
             onNextQuestion={handleNextQuestion}
             onExit={() => setView('modes')}
           />
         )}
 
         {currentView === 'dashboard' && (
-          <ProgressDashboard
+          <AnalyticsDashboard
             candidate={candidate}
           />
         )}
@@ -97,6 +113,12 @@ export default function App() {
           <ProfileView
             candidate={candidate}
             onProfileUpdated={(updated) => setCandidate(updated)}
+          />
+        )}
+
+        {currentView === 'storybank' && (
+          <StoryBank
+            candidate={candidate}
           />
         )}
       </main>

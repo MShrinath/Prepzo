@@ -32,12 +32,16 @@ export async function startRolePractice(candidateId, role, difficulty = 'medium'
   return res.json();
 }
 
-export async function startResumeJDInterview(candidateId, targetRole, difficulty, jobDescription, resumeFile, resumeText) {
+export async function startResumeJDInterview(candidateId, targetRole, difficulty, jobDescription, resumeFile, resumeText, isConversational = false, questionCount = 5) {
   const formData = new FormData();
   formData.append('candidate_id', candidateId);
   formData.append('target_role', targetRole || 'SDE');
   formData.append('difficulty', difficulty || 'medium');
   formData.append('job_description', jobDescription);
+  if (isConversational) {
+    formData.append('is_conversational', 'true');
+    formData.append('question_count', String(questionCount || 5));
+  }
   if (resumeFile) {
     formData.append('resume_file', resumeFile);
   }
@@ -60,6 +64,24 @@ export async function startHRInterview(candidateId, difficulty = 'medium', topic
     body: JSON.stringify({ candidate_id: candidateId, difficulty, topics }),
   });
   if (!res.ok) throw new Error('Failed to start HR round');
+  return res.json();
+}
+
+export async function startCompanyArchetype(candidateId, company = 'amazon', subTopic = null, difficulty = 'medium', isConversational = false, questionCount = 5) {
+  const res = await fetch(`${BASE_URL}/api/interviews/company-archetype`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      candidate_id: candidateId,
+      company,
+      sub_topic: subTopic,
+      topics: subTopic ? [company, subTopic] : [company],
+      difficulty,
+      is_conversational: isConversational,
+      question_count: questionCount,
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to start Company Archetype interview');
   return res.json();
 }
 
@@ -141,6 +163,95 @@ export async function clearCandidateSessions(candidateId = 'candidate_001') {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error('Failed to clear candidate sessions');
+  return res.json();
+}
+
+// ===== Conversational Interview APIs =====
+
+export async function startConversationalInterview(candidateId, mode = 'role_practice', targetRole = 'SDE', difficulty = 'medium', competency = null, questionCount = 5) {
+  const params = new URLSearchParams({
+    candidate_id: candidateId,
+    mode,
+    target_role: targetRole,
+    difficulty,
+    question_count: String(questionCount),
+  });
+  if (competency) params.append('competency', competency);
+
+  const res = await fetch(`${BASE_URL}/api/interviews/conversational?${params.toString()}`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to start conversational interview');
+  return res.json();
+}
+
+export async function fetchNextConversationalQuestion(sessionId) {
+  const res = await fetch(`${BASE_URL}/api/interviews/${sessionId}/next`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to fetch next question');
+  return res.json();
+}
+
+export async function fetchSessionSummary(sessionId) {
+  const res = await fetch(`${BASE_URL}/api/interviews/${sessionId}/summary`);
+  if (!res.ok) throw new Error('Failed to fetch session summary');
+  return res.json();
+}
+
+// ===== Story Bank APIs =====
+
+export async function fetchStories(candidateId = 'candidate_001') {
+  const res = await fetch(`${BASE_URL}/api/candidates/${candidateId}/stories`);
+  if (!res.ok) throw new Error('Failed to fetch stories');
+  return res.json();
+}
+
+export async function saveStory(candidateId, storyData) {
+  const res = await fetch(`${BASE_URL}/api/candidates/${candidateId}/stories`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(storyData),
+  });
+  if (!res.ok) throw new Error('Failed to save story');
+  return res.json();
+}
+
+export async function updateStory(candidateId, storyId, storyData) {
+  const res = await fetch(`${BASE_URL}/api/candidates/${candidateId}/stories/${storyId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(storyData),
+  });
+  if (!res.ok) throw new Error('Failed to update story');
+  return res.json();
+}
+
+export async function deleteStory(candidateId, storyId) {
+  const res = await fetch(`${BASE_URL}/api/candidates/${candidateId}/stories/${storyId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete story');
+  return res.json();
+}
+
+// ===== Export & Benchmarking APIs =====
+
+export async function exportSessionPDF(sessionId) {
+  const res = await fetch(`${BASE_URL}/api/interviews/${sessionId}/export/pdf`);
+  if (!res.ok) throw new Error('Failed to export PDF');
+  return res.blob();
+}
+
+export async function exportDossierPDF(candidateId = 'candidate_001') {
+  const res = await fetch(`${BASE_URL}/api/candidates/${candidateId}/dossier/pdf`);
+  if (!res.ok) throw new Error('Failed to export dossier PDF');
+  return res.blob();
+}
+
+export async function fetchPercentileRanking(candidateId = 'candidate_001') {
+  const res = await fetch(`${BASE_URL}/api/candidates/${candidateId}/percentile`);
+  if (!res.ok) throw new Error('Failed to fetch percentile ranking');
   return res.json();
 }
 

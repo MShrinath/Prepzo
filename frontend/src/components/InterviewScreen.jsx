@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Mic, MicOff, Send, Volume2, Type, Sparkles, AlertCircle,
-  ChevronLeft, RefreshCw, CheckCircle2, Square, RotateCcw, Loader2
+  ChevronLeft, RefreshCw, CheckCircle2, Square, RotateCcw, Loader2, Target
 } from 'lucide-react';
 import { submitTextResponse, submitVoiceResponse } from '../services/api';
+import VocalHUD from './VocalHUD';
 
 export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluation }) {
   const [responseMode, setResponseMode] = useState('voice'); // 'voice' | 'text'
@@ -15,8 +16,10 @@ export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluat
   const [evaluating, setEvaluating] = useState(false);
   const [evalStep, setEvalStep] = useState(0);
   const [error, setError] = useState(null);
+  const [liveTranscript, setLiveTranscript] = useState('');
 
   const mediaRecorderRef = useRef(null);
+  const recognitionRef = useRef(null);
   const audioChunksRef = useRef([]);
   const timerRef = useRef(null);
 
@@ -62,6 +65,28 @@ export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluat
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
+      setLiveTranscript('');
+
+      // Web Speech API for real-time live transcript
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          const recognition = new SpeechRecognition();
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.onresult = (e) => {
+            let current = '';
+            for (let i = 0; i < e.results.length; i++) {
+              current += e.results[i][0].transcript;
+            }
+            setLiveTranscript(current);
+          };
+          recognition.start();
+          recognitionRef.current = recognition;
+        } catch (recErr) {
+          console.warn("Web Speech API not available or blocked:", recErr);
+        }
+      }
     } catch (err) {
       console.warn("Microphone access failed:", err);
       setError("Microphone access was denied. Please allow microphone permissions in your browser or switch to Type Answer mode.");
@@ -72,6 +97,11 @@ export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluat
   const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop();
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
     }
     setIsRecording(false);
   };
@@ -178,6 +208,98 @@ export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluat
         </div>
       )}
 
+      {/* Resume & Job Match Intelligence Panel */}
+      {sessionData?.gap_analysis && (
+        <div className="mb-6 p-5 rounded-3xl bg-white/[0.03] border border-[#30D158]/30 shadow-apple-card backdrop-blur-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-white/[0.08] gap-2 mb-3">
+            <div className="flex items-center space-x-2 text-[#30D158] font-semibold text-xs uppercase tracking-wide">
+              <Sparkles className="w-4 h-4 text-[#30D158]" />
+              <span>Resume ↔ Job Match Evaluation</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              {sessionData.gap_analysis.match_score !== undefined && (
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#30D158]/15 text-[#30D158] border border-[#30D158]/30">
+                  {sessionData.gap_analysis.match_score}% Fit Score
+                </span>
+              )}
+              {sessionData.gap_analysis.experience_level_match && (
+                <span className="text-[11px] text-[#98989D] px-2.5 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.08]">
+                  {sessionData.gap_analysis.experience_level_match}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {sessionData.gap_analysis.role_fit_summary && (
+            <p className="text-xs text-[#D1D1D6] leading-relaxed mb-4">
+              {sessionData.gap_analysis.role_fit_summary}
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            {sessionData.gap_analysis.matched_skills?.length > 0 && (
+              <div className="p-3 rounded-2xl bg-[#30D158]/10 border border-[#30D158]/20">
+                <div className="text-[11px] font-semibold text-[#30D158] mb-1.5 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Verified Resume Strengths</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {sessionData.gap_analysis.matched_skills.map((s, idx) => (
+                    <span key={idx} className="px-2 py-0.5 rounded-lg bg-[#30D158]/20 text-[#30D158] text-[10px] font-medium">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {sessionData.gap_analysis.missing_skills?.length > 0 && (
+              <div className="p-3 rounded-2xl bg-[#FF9F0A]/10 border border-[#FF9F0A]/20">
+                <div className="text-[11px] font-semibold text-[#FF9F0A] mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>Identified Gaps (Interview Focus)</span>
+                  </span>
+                  <span className="text-[9px] uppercase tracking-wider text-[#FF9F0A]/80 font-medium">Probing in Questions</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {sessionData.gap_analysis.missing_skills.map((s, idx) => {
+                    const isCurrentFocus = questionObj.target_gap && (
+                      s.toLowerCase().includes(questionObj.target_gap.toLowerCase()) ||
+                      questionObj.target_gap.toLowerCase().includes(s.toLowerCase())
+                    );
+                    return (
+                      <span
+                        key={idx}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all ${
+                          isCurrentFocus
+                            ? "bg-[#FF9F0A] text-black font-bold ring-2 ring-[#FF9F0A]/60 shadow-sm"
+                            : "bg-[#FF9F0A]/20 text-[#FF9F0A]"
+                        }`}
+                      >
+                        {isCurrentFocus && "🎯 "}
+                        {s}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {questionObj.target_gap && (
+            <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-xs text-[#98989D]">
+              <span className="flex items-center space-x-1.5">
+                <Target className="w-3.5 h-3.5 text-[#FF9F0A]" />
+                <span>Current Question Probing:</span>
+                <strong className="text-[#FF9F0A]">{questionObj.target_gap}</strong>
+              </span>
+              <span className="text-[11px] text-[#636366]">Gap Validation Stage</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Prompter Card */}
       <div className="bg-white/[0.04] border border-white/[0.08] rounded-3xl p-6 sm:p-8 shadow-apple-card mb-6 backdrop-blur-2xl">
         <div className="flex items-center justify-between mb-3">
@@ -189,14 +311,21 @@ export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluat
           </span>
         </div>
 
+        {questionObj.target_gap && (
+          <div className="mb-3 inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-[#FF9F0A]/15 border border-[#FF9F0A]/35 text-[#FF9F0A] text-xs font-semibold">
+            <Target className="w-3.5 h-3.5" />
+            <span>Focus Gap Being Probed: <strong>{questionObj.target_gap}</strong></span>
+          </div>
+        )}
+
         <h2 className="text-xl sm:text-2xl font-semibold text-white tracking-tight leading-relaxed">
           "{questionText}"
         </h2>
 
         {questionObj.reason && (
-          <div className="mt-4 pt-4 border-t border-white/[0.06] text-xs text-[#98989D] flex items-center space-x-1.5">
-            <span className="text-white font-medium">Target:</span>
-            <span>{questionObj.reason}</span>
+          <div className="mt-4 pt-4 border-t border-white/[0.06] text-xs text-[#98989D] flex items-start space-x-1.5">
+            <span className="text-white font-medium shrink-0">Gap Evaluation Rationale:</span>
+            <span className="text-[#D1D1D6]">{questionObj.reason}</span>
           </div>
         )}
       </div>
@@ -301,6 +430,13 @@ export default function InterviewScreen({ sessionData, onBack, onCompleteEvaluat
             <p className="text-xs text-[#98989D] max-w-sm leading-relaxed">
               Speak naturally as you would in an interview. Whisper STT evaluates delivery cadence, clarity, and filler pause frequency.
             </p>
+
+            {/* Real-time Vocal HUD & Delivery Copilot */}
+            {isRecording && (
+              <div className="mt-5 w-full max-w-md text-left">
+                <VocalHUD isRecording={isRecording} transcript={liveTranscript} />
+              </div>
+            )}
 
             {/* Audio player */}
             {audioUrl && !isRecording && (

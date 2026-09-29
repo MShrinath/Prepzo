@@ -25,6 +25,7 @@ from app.schemas.interview import (
     RolePracticeStartRequest,
     ResumeJDStartRequest,
     HRStartRequest,
+    CompanyArchetypeStartRequest,
     GenericInterviewStartRequest,
     TextResponseSubmitRequest,
     GenericTextResponseRequest,
@@ -105,7 +106,13 @@ def start_interview_session(req: GenericInterviewStartRequest, db: Session = Dep
         difficulty=req.difficulty,
         competency=req.competency,
         candidate_profile=profile.to_dict(),
+        previous_questions=[],
     )
+
+    session.current_question = q_output.question
+    session.questions_history = json.dumps([q_output.question])
+    session.questions_asked = 1
+    db.commit()
 
     return {
         "session_id": session_id,
@@ -133,7 +140,7 @@ def start_role_practice(req: RolePracticeStartRequest, db: Session = Depends(get
     db.add(session)
     db.commit()
 
-    # Select initial question
+    # Select or generate initial question
     q_agent = QuestionAgent(db_session=db)
     q_output = q_agent.select_or_generate_question(
         mode="role_practice",
@@ -141,7 +148,13 @@ def start_role_practice(req: RolePracticeStartRequest, db: Session = Depends(get
         difficulty=req.difficulty,
         competency=req.competency,
         candidate_profile=profile.to_dict(),
+        previous_questions=[],
     )
+
+    session.current_question = q_output.question
+    session.questions_history = json.dumps([q_output.question])
+    session.questions_asked = 1
+    db.commit()
 
     return {
         "session_id": session_id,
@@ -160,9 +173,12 @@ async def start_resume_jd_interview(
     job_description: str = Form(...),
     resume_file: Optional[UploadFile] = File(None),
     resume_text: Optional[str] = Form(None),
+    is_conversational: Optional[bool] = Form(False),
+    question_count: Optional[int] = Form(5),
     db: Session = Depends(get_db),
 ):
-    profile = _ensure_candidate_profile(candidate_id, db, target_role=target_role or "SDE")
+    role = target_role or "SDE"
+    profile = _ensure_candidate_profile(candidate_id, db, target_role=role)
 
     extracted_resume_text = resume_text or ""
     if resume_file:
@@ -175,22 +191,24 @@ async def start_resume_jd_interview(
     if not extracted_resume_text:
         # Fall back to candidate profile data
         skills_str = ", ".join([s.skill_name for s in profile.skills])
-        extracted_resume_text = f"Candidate: {profile.name}\nTarget Role: {target_role}\nSkills: {skills_str}\nBio: {profile.bio}"
+        extracted_resume_text = f"Candidate: {profile.name}\nTarget Role: {role}\nSkills: {skills_str}\nBio: {profile.bio}"
 
-    # Perform Gap Analysis
-    gap_analysis = ResumeJDService.analyze_gap(extracted_resume_text, job_description)
+    # Perform Gap Analysis using LLM
+    gap_analysis = ResumeJDService.analyze_gap(extracted_resume_text, job_description, target_role=role)
 
     session_id = f"sess_{uuid.uuid4().hex[:10]}"
     session = InterviewSession(
         session_id=session_id,
         candidate_id=candidate_id,
         mode="resume_jd",
-        target_role=target_role,
+        target_role=role,
         difficulty=difficulty,
         resume_text=extracted_resume_text,
         jd_text=job_description,
         gap_analysis=json.dumps(gap_analysis),
         status="active",
+        is_conversational=bool(is_conversational),
+        question_count=min(max(question_count or 5, 2), 10),
     )
     db.add(session)
     db.commit()
@@ -198,20 +216,29 @@ async def start_resume_jd_interview(
     q_agent = QuestionAgent(db_session=db)
     q_output = q_agent.select_or_generate_question(
         mode="resume_jd",
-        target_role=target_role,
+        target_role=role,
         difficulty=difficulty,
         resume_text=extracted_resume_text,
         jd_text=job_description,
         candidate_profile=profile.to_dict(),
+        previous_questions=[],
     )
+
+    session.current_question = q_output.question
+    session.questions_history = json.dumps([q_output.question])
+    session.questions_asked = 1
+    db.commit()
 
     return {
         "session_id": session_id,
         "mode": "resume_jd",
-        "target_role": target_role,
+        "target_role": role,
         "difficulty": difficulty,
         "gap_analysis": gap_analysis,
         "question": q_output.model_dump(),
+        "is_conversational": session.is_conversational,
+        "question_number": 1,
+        "total_questions": session.question_count,
     }
 
 
@@ -239,7 +266,13 @@ def start_hr_interview(req: HRStartRequest, db: Session = Depends(get_db)):
         difficulty=req.difficulty,
         topics=req.topics,
         candidate_profile=profile.to_dict(),
+        previous_questions=[],
     )
+
+    session.current_question = q_output.question
+    session.questions_history = json.dumps([q_output.question])
+    session.questions_asked = 1
+    db.commit()
 
     return {
         "session_id": session_id,
@@ -248,6 +281,63 @@ def start_hr_interview(req: HRStartRequest, db: Session = Depends(get_db)):
         "topics": req.topics,
         "question": q_output.model_dump(),
     }
+
+
+@router.post("/interviews/company-archetype")
+def start_company_archetype(req: CompanyArchetypeStartRequest, db: Session = Depends(get_db)):
+    company = (req.company or (req.topics[0] if req.topics else "amazon")).lower()
+    sub_topic = req.sub_topic or (req.topics[1] if req.topics and len(req.topics) > 1 else None)
+    profile = _ensure_candidate_profile(req.candidate_id, db, target_role=f"{company.capitalize()} Archetype")
+
+    session_id = f"sess_{uuid.uuid4().hex[:10]}"
+    topics_list = [company]
+    if sub_topic:
+        topics_list.append(sub_topic)
+
+    session = InterviewSession(
+        session_id=session_id,
+        candidate_id=req.candidate_id,
+        mode="company_archetype",
+        target_role=f"{company.capitalize()} Archetype",
+        difficulty=req.difficulty,
+        competency=sub_topic or f"{company.capitalize()} Bar",
+        topics=json.dumps(topics_list),
+        status="active",
+        is_conversational=bool(req.is_conversational),
+        question_count=min(max(req.question_count or 5, 2), 10),
+        questions_asked=1,
+    )
+    db.add(session)
+    db.commit()
+
+    q_agent = QuestionAgent(db_session=db)
+    q_output = q_agent.select_or_generate_question(
+        mode="company_archetype",
+        target_role=f"{company.capitalize()} Archetype",
+        difficulty=req.difficulty,
+        competency=sub_topic or f"{company.capitalize()} Bar",
+        topics=topics_list,
+        candidate_profile=profile.to_dict(),
+        previous_questions=[],
+    )
+
+    session.current_question = q_output.question
+    session.questions_history = json.dumps([q_output.question])
+    db.commit()
+
+    return {
+        "session_id": session_id,
+        "mode": "company_archetype",
+        "company": company,
+        "sub_topic": sub_topic,
+        "target_role": session.target_role,
+        "difficulty": req.difficulty,
+        "question": q_output.model_dump(),
+        "is_conversational": session.is_conversational,
+        "question_number": 1,
+        "total_questions": session.question_count,
+    }
+
 
 
 @router.get("/interviews/{session_id}")
@@ -267,8 +357,35 @@ def get_next_question_for_session(session_id: str, db: Session = Depends(get_db)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Get previously asked questions in this session
-    previous_questions = [r.question_text for r in session.responses]
+    # Aggregate all previously asked questions to prevent repetition
+    previous_questions = []
+    if session.questions_history:
+        try:
+            previous_questions.extend(json.loads(session.questions_history))
+        except Exception:
+            pass
+    for r in session.responses:
+        if r.question_text and r.question_text not in previous_questions:
+            previous_questions.append(r.question_text)
+    if session.current_question and session.current_question not in previous_questions:
+        previous_questions.append(session.current_question)
+
+    # Also include questions from candidate's recent sessions
+    prior_sessions = (
+        db.query(InterviewSession)
+        .filter(InterviewSession.candidate_id == session.candidate_id, InterviewSession.session_id != session_id)
+        .order_by(InterviewSession.created_at.desc())
+        .limit(3)
+        .all()
+    )
+    for ps in prior_sessions:
+        if ps.questions_history:
+            try:
+                for q in json.loads(ps.questions_history):
+                    if q not in previous_questions:
+                        previous_questions.append(q)
+            except Exception:
+                pass
 
     q_agent = QuestionAgent(db_session=db)
     q_output = q_agent.select_or_generate_question(
@@ -283,9 +400,21 @@ def get_next_question_for_session(session_id: str, db: Session = Depends(get_db)
         previous_questions=previous_questions,
     )
 
+    # Record newly generated question
+    q_hist = json.loads(session.questions_history) if session.questions_history else []
+    if q_output.question not in q_hist:
+        q_hist.append(q_output.question)
+    session.questions_history = json.dumps(q_hist)
+    session.current_question = q_output.question
+    session.questions_asked = (session.questions_asked or 0) + 1
+    db.commit()
+
     return {
         "session_id": session_id,
         "mode": session.mode,
+        "target_role": session.target_role,
+        "difficulty": session.difficulty,
+        "gap_analysis": json.loads(session.gap_analysis) if session.gap_analysis else None,
         "question": q_output.model_dump(),
     }
 
@@ -316,7 +445,7 @@ def submit_text_response(session_id: str, req: TextResponseSubmitRequest, db: Se
         "target_role": session.target_role,
         "competency": session.competency or "Problem Solving",
         "difficulty": session.difficulty,
-        "question_type": "behavioral" if session.mode == "hr" else "technical",
+        "question_type": "behavioral" if session.mode in ("hr", "company_archetype") else "technical",
         "current_question": req.question_text or "General interview question",
         "candidate_response": req.response,
         "session_history": prior_responses,
@@ -477,7 +606,7 @@ async def submit_voice_response(
         "target_role": session.target_role,
         "competency": session.competency or "Communication",
         "difficulty": session.difficulty,
-        "question_type": "behavioral" if session.mode == "hr" else "technical",
+        "question_type": "behavioral" if session.mode in ("hr", "company_archetype") else "technical",
         "current_question": question_text,
         "candidate_response": transcript,
         "transcript": transcript,

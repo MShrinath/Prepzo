@@ -154,6 +154,11 @@ class InterviewSession(Base):
     jd_text = Column(Text, nullable=True)
     gap_analysis = Column(Text, nullable=True)  # JSON
     status = Column(String, default="active")  # active, completed
+    question_count = Column(Integer, default=5)  # Total questions for conversational mode
+    questions_asked = Column(Integer, default=0)  # How many questions asked so far
+    is_conversational = Column(Boolean, default=False)  # Whether this is a conversational multi-turn session
+    questions_history = Column(Text, default="[]")  # JSON list of all question texts presented
+    current_question = Column(Text, nullable=True)  # Current active question text
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
@@ -175,6 +180,11 @@ class InterviewSession(Base):
             "jd_text": self.jd_text,
             "gap_analysis": json.loads(self.gap_analysis) if self.gap_analysis else None,
             "status": self.status,
+            "question_count": self.question_count or 5,
+            "questions_asked": self.questions_asked or 0,
+            "is_conversational": self.is_conversational or False,
+            "questions_history": json.loads(self.questions_history) if self.questions_history else [],
+            "current_question": self.current_question,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -397,6 +407,50 @@ class RecurringGap(Base):
             "first_detected_at": self.first_detected_at.isoformat() if self.first_detected_at else None,
             "last_detected_at": self.last_detected_at.isoformat() if self.last_detected_at else None,
             "status": self.status,
+        }
+
+
+class STARStory(Base):
+    """Reusable career STAR story bank entries."""
+    __tablename__ = "star_stories"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    candidate_id = Column(String, ForeignKey("candidate_profiles.candidate_id"), nullable=False)
+    title = Column(String, nullable=False)
+    situation = Column(Text, nullable=True)
+    task = Column(Text, nullable=True)
+    action = Column(Text, nullable=True)
+    result = Column(Text, nullable=True)
+    tags = Column(Text, default="[]")  # JSON list
+    competency = Column(String, nullable=True)
+    source_session_id = Column(String, nullable=True)
+    source_question = Column(Text, nullable=True)
+    original_response = Column(Text, nullable=True)
+    improved_version = Column(Text, nullable=True)
+    score = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    candidate = relationship("CandidateProfile", backref="star_stories")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "candidate_id": self.candidate_id,
+            "title": self.title,
+            "situation": self.situation,
+            "task": self.task,
+            "action": self.action,
+            "result": self.result,
+            "tags": json.loads(self.tags) if self.tags else [],
+            "competency": self.competency,
+            "source_session_id": self.source_session_id,
+            "source_question": self.source_question,
+            "original_response": self.original_response,
+            "improved_version": self.improved_version,
+            "score": self.score,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
 

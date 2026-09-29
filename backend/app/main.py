@@ -8,6 +8,9 @@ from app.config import settings
 from app.database.connection import init_db
 from app.api.candidates import router as candidates_router
 from app.api.interviews import router as interviews_router
+from app.api.conversational import router as conversational_router
+from app.api.story_bank import router as story_bank_router
+from app.api.export import router as export_router
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -35,6 +38,9 @@ app.add_middleware(
 # Include Routers
 app.include_router(candidates_router)
 app.include_router(interviews_router)
+app.include_router(conversational_router)
+app.include_router(story_bank_router)
+app.include_router(export_router)
 
 # Mount uploads static files
 app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")

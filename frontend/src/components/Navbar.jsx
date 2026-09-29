@@ -1,8 +1,8 @@
 import React from 'react';
-import { Play, BarChart2, User, Mic2 } from 'lucide-react';
+import { Play, BarChart2, User, Mic2, BookOpen } from 'lucide-react';
 
 export default function Navbar({ currentView, setView, candidate }) {
-  const isPracticeActive = currentView === 'modes' || currentView === 'interview';
+  const isPracticeActive = currentView === 'modes' || currentView === 'interview' || currentView === 'conversational';
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-2xl bg-black/70 border-b border-white/[0.08]">
@@ -49,6 +49,18 @@ export default function Navbar({ currentView, setView, candidate }) {
           >
             <BarChart2 className="w-3.5 h-3.5" />
             <span>Analytics</span>
+          </button>
+
+          <button
+            onClick={() => setView('storybank')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center space-x-1.5 transition-all duration-200 ${
+              currentView === 'storybank'
+                ? 'bg-white/[0.14] text-white shadow-apple-pill font-semibold'
+                : 'text-[#98989D] hover:text-white'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Stories</span>
           </button>
 
           <button

@@ -30,6 +30,16 @@ class HRStartRequest(BaseModel):
     topics: List[str] = ["conflict_resolution", "receiving_feedback", "stress_management"]
 
 
+class CompanyArchetypeStartRequest(BaseModel):
+    candidate_id: str
+    company: Optional[str] = "amazon"
+    sub_topic: Optional[str] = None
+    difficulty: str = "medium"
+    topics: Optional[List[str]] = None
+    is_conversational: Optional[bool] = False
+    question_count: Optional[int] = 5
+
+
 class GenericInterviewStartRequest(BaseModel):
     candidate_id: str
     target_role: Optional[str] = "SDE"
