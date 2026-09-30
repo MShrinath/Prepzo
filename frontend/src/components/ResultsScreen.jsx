@@ -26,6 +26,7 @@ export default function ResultsScreen({
   candidateProgress,
   onRetakeInterview,
   onDownloadReport,
+  onViewPlans,
   initialTab = 'detailed',
 }) {
   const [activeTab, setActiveTab] = useState(initialTab); // 'detailed' | 'strengths' | 'gaps' | 'questions' | 'transcript' | 'analytics'
@@ -78,32 +79,40 @@ export default function ResultsScreen({
     );
   }
 
+  // Helper to ensure all metric scores are scaled to 0-100%
+  const normalizeTo100 = (val, fallback = 70) => {
+    if (val === undefined || val === null || isNaN(val)) return fallback;
+    const num = Number(val);
+    if (num <= 10) return Math.round(num * 10);
+    return Math.round(num);
+  };
+
   // Derive real scores
-  const overallScore = Math.round(
+  const overallScore = normalizeTo100(
     evaluationData?.coaching_feedback?.overall_score ?? (candidateProgress?.average_overall_score || 75)
   );
 
   const commAvg = evaluationData?.communication_evaluation
-    ? Math.round(
+    ? normalizeTo100(
         (evaluationData.communication_evaluation.clarity_score +
           evaluationData.communication_evaluation.conciseness_score +
           evaluationData.communication_evaluation.structure_score +
           evaluationData.communication_evaluation.communication_quality_score) /
           4
       )
-    : Math.round(candidateProgress?.average_communication_score || 72);
+    : normalizeTo100(candidateProgress?.average_communication_score || 72);
 
   const techAvg = evaluationData?.content_evaluation
-    ? Math.round(
+    ? normalizeTo100(
         (evaluationData.content_evaluation.technical_depth_score +
           evaluationData.content_evaluation.correctness_score +
           evaluationData.content_evaluation.relevance_score) /
           3
       )
-    : Math.round(candidateProgress?.average_content_score || 76);
+    : normalizeTo100(candidateProgress?.average_content_score || 76);
 
   const starAvg = evaluationData?.star_evaluation?.applicable
-    ? Math.round(
+    ? normalizeTo100(
         (evaluationData.star_evaluation.situation_score +
           evaluationData.star_evaluation.task_score +
           evaluationData.star_evaluation.action_score +
@@ -113,7 +122,7 @@ export default function ResultsScreen({
     : 70;
 
   const confidenceScore = evaluationData?.communication_evaluation?.communication_quality_score
-    ? Math.round(evaluationData.communication_evaluation.communication_quality_score)
+    ? normalizeTo100(evaluationData.communication_evaluation.communication_quality_score)
     : Math.round((commAvg + overallScore) / 2);
 
   const getScoreStatus = (score) => {
@@ -130,48 +139,101 @@ export default function ResultsScreen({
     return '#EF4444'; // rose
   };
 
-  const scoreDonuts = [
-    {
-      id: 'overall',
-      label: 'Overall Score',
-      score: overallScore,
-      status: getScoreStatus(overallScore),
-      color: getScoreColor(overallScore),
-      description: `Evaluated by Prepzo LangGraph multi-agent diagnostic suite for ${sessionData?.role || candidate?.target_role || 'Software Engineer'}.`,
-    },
-    {
-      id: 'technical',
-      label: 'Technical Depth',
-      score: techAvg,
-      status: getScoreStatus(techAvg),
-      color: getScoreColor(techAvg),
-      description: 'Domain mastery, accuracy of technical explanations, and trade-off considerations.',
-    },
-    {
-      id: 'communication',
-      label: 'Communication',
-      score: commAvg,
-      status: getScoreStatus(commAvg),
-      color: getScoreColor(commAvg),
-      description: 'Clarity, conciseness, vocal cadence, and structured articulation.',
-    },
-    {
-      id: 'star',
-      label: 'STAR Alignment',
-      score: starAvg,
-      status: getScoreStatus(starAvg),
-      color: getScoreColor(starAvg),
-      description: 'Adherence to Situation, Task, Action, and measurable business Results.',
-    },
-    {
-      id: 'confidence',
-      label: 'Vocal Delivery',
-      score: confidenceScore,
-      status: getScoreStatus(confidenceScore),
-      color: getScoreColor(confidenceScore),
-      description: 'Confidence, minimal hesitation pauses, and steady projection.',
-    },
-  ];
+  // Check if current assessment is HR / Behavioral
+  const isHRRound =
+    sessionData?.mode === 'hr' ||
+    sessionData?.target_role?.toLowerCase().includes('hr') ||
+    sessionData?.target_role?.toLowerCase().includes('behavioral') ||
+    evaluationData?.mode === 'hr' ||
+    evaluationData?.question_type === 'behavioral' ||
+    Boolean(evaluationData?.star_evaluation?.applicable && (sessionData?.mode === 'hr' || String(candidate?.target_role).toLowerCase().includes('hr')));
+
+  // In HR rounds, Communication and Behavioral (STAR) & Leadership come first; technical is placed after them
+  const scoreDonuts = isHRRound
+    ? [
+        {
+          id: 'overall',
+          label: 'Overall Score',
+          score: overallScore,
+          status: getScoreStatus(overallScore),
+          color: getScoreColor(overallScore),
+          description: `Evaluated by Prepzo HR & Leadership diagnostic suite for ${sessionData?.role || candidate?.target_role || 'HR / Behavioral'}.`,
+        },
+        {
+          id: 'communication',
+          label: 'Communication',
+          score: commAvg,
+          status: getScoreStatus(commAvg),
+          color: getScoreColor(commAvg),
+          description: 'Clarity, conciseness, vocal delivery, and structured articulation.',
+        },
+        {
+          id: 'star',
+          label: 'STAR & Leadership',
+          score: starAvg,
+          status: getScoreStatus(starAvg),
+          color: getScoreColor(starAvg),
+          description: 'Personal ownership (\'I\' vs \'we\'), decisive action, conflict resolution, and measurable outcomes.',
+        },
+        {
+          id: 'confidence',
+          label: 'Vocal Delivery',
+          score: confidenceScore,
+          status: getScoreStatus(confidenceScore),
+          color: getScoreColor(confidenceScore),
+          description: 'Executive presence, vocal cadence, and steady projection.',
+        },
+        {
+          id: 'technical',
+          label: 'Domain Context',
+          score: techAvg,
+          status: getScoreStatus(techAvg),
+          color: getScoreColor(techAvg),
+          description: 'Operational and situational grounding for the role.',
+        },
+      ]
+    : [
+        {
+          id: 'overall',
+          label: 'Overall Score',
+          score: overallScore,
+          status: getScoreStatus(overallScore),
+          color: getScoreColor(overallScore),
+          description: `Evaluated by Prepzo LangGraph multi-agent diagnostic suite for ${sessionData?.role || candidate?.target_role || 'Software Engineer'}.`,
+        },
+        {
+          id: 'technical',
+          label: 'Technical Depth',
+          score: techAvg,
+          status: getScoreStatus(techAvg),
+          color: getScoreColor(techAvg),
+          description: 'Domain mastery, accuracy of technical explanations, and trade-off considerations.',
+        },
+        {
+          id: 'communication',
+          label: 'Communication',
+          score: commAvg,
+          status: getScoreStatus(commAvg),
+          color: getScoreColor(commAvg),
+          description: 'Clarity, conciseness, vocal cadence, and structured articulation.',
+        },
+        {
+          id: 'star',
+          label: 'STAR Alignment',
+          score: starAvg,
+          status: getScoreStatus(starAvg),
+          color: getScoreColor(starAvg),
+          description: 'Adherence to Situation, Task, Action, and measurable business Results.',
+        },
+        {
+          id: 'confidence',
+          label: 'Vocal Delivery',
+          score: confidenceScore,
+          status: getScoreStatus(confidenceScore),
+          color: getScoreColor(confidenceScore),
+          description: 'Confidence, minimal hesitation pauses, and steady projection.',
+        },
+      ];
 
   const highlights = evaluationData?.coaching_feedback?.strengths?.length > 0
     ? evaluationData.coaching_feedback.strengths
@@ -188,6 +250,23 @@ export default function ResultsScreen({
         'Elaborate on engineering trade-offs between alternative designs',
         'Structure responses strictly into Situation, Task, Action, and Result',
       ];
+
+  const actionableAdvice = evaluationData?.coaching_feedback?.actionable_advice?.length > 0
+    ? evaluationData.coaching_feedback.actionable_advice
+    : isHRRound
+    ? [
+        'Use the STAR method: spend 20s on Situation/Task, 50s on Action, and 20s on Result.',
+        'Replace passive words ("we solved") with decisive personal ownership ("I diagnosed, proposed the plan, and led execution").',
+        'Conclude every behavioral story with measurable impact (e.g. "Project shipped on time with 99.8% customer satisfaction").',
+        'Maintain steady vocal cadence: pause comfortably rather than filling silence with "um" or "like".'
+      ]
+    : [
+        'Lead with the punchline: state the problem scope and architecture within the first 20 seconds.',
+        'Replace passive phrases with active personal ownership and explain design trade-offs.',
+        'Always conclude technical answers with verifiable quantitative metrics (latency, QPS, memory deltas).'
+      ];
+
+  const evidenceItems = evaluationData?.coaching_feedback?.evidence_items || [];
 
   const questionText =
     evaluationData?.question_text ||
@@ -316,8 +395,8 @@ export default function ResultsScreen({
 
   const tabs = [
     { id: 'detailed', label: 'Detailed Analysis' },
-    { id: 'strengths', label: 'Strengths' },
-    { id: 'gaps', label: 'Gaps & Action Items' },
+    { id: 'strengths', label: isHRRound ? 'Leadership Strengths' : 'Strengths' },
+    { id: 'gaps', label: 'How to Improve & Drills' },
     { id: 'questions', label: 'Question Review' },
     { id: 'transcript', label: 'Verbatim Transcript' },
     { id: 'analytics', label: 'Multi-Session Analytics' },
@@ -333,11 +412,13 @@ export default function ResultsScreen({
               Interview Evaluation Results
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              Live AI Assessment
+              {isHRRound ? 'HR & Leadership Assessment' : 'Technical & System Design Assessment'}
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Grounded multi-agent breakdown for {sessionData?.role || candidate?.target_role || 'Software Engineer'}.
+            {isHRRound
+              ? `Communication, STAR leadership agency, and executive presence evaluation for ${sessionData?.role || candidate?.target_role || 'HR Behavioral'}.`
+              : `Grounded multi-agent breakdown for ${sessionData?.role || candidate?.target_role || 'Software Engineer'}.`}
           </p>
         </div>
 
@@ -479,22 +560,109 @@ export default function ResultsScreen({
         </div>
       )}
 
-      {/* Tab 3: Gaps & Action Items */}
+      {/* Tab 3: How to Improve & Drills */}
       {activeTab === 'gaps' && (
-        <div className="bg-[#121927] border border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
-          <h3 className="text-base font-bold text-white">Actionable Improvement Drills</h3>
-          <div className="space-y-3">
-            {improvements.map((imp, i) => (
-              <div key={i} className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-start space-x-3">
-                <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-white">{imp}</p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Added to your 7-Day Improvement Plan. Practice targeted drills in the Practice Lab to clear this gap.
-                  </p>
-                </div>
+        <div className="space-y-6 animate-fadeIn">
+          {/* Section 1: AI Actionable Advice */}
+          <div className="bg-[#121927] border border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-blue-400 font-bold text-sm sm:text-base">
+                <Sparkles className="w-5 h-5 flex-shrink-0" />
+                <span>AI Recommended Steps to Elevate Your Performance</span>
               </div>
-            ))}
+              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-900/40 text-blue-300 border border-blue-800/50">
+                Grounded LLM Coaching
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              {actionableAdvice.map((adv, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 rounded-xl bg-slate-900/70 border border-slate-800/80 flex items-start space-x-3.5 hover:border-blue-500/30 transition-all"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-blue-600/15 border border-blue-500/30 text-blue-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                    {idx + 1}
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-semibold text-slate-200 leading-relaxed">
+                      {adv}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 2: Concrete Evidence & Diagnostics */}
+          {evidenceItems.length > 0 && (
+            <div className="bg-[#121927] border border-slate-800 rounded-2xl p-6 shadow-xs space-y-4">
+              <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <Target className="w-4 h-4 text-amber-400" />
+                <span>Specific Answer Evidence &amp; Concrete Fixes</span>
+              </h3>
+
+              <div className="space-y-3">
+                {evidenceItems.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{item.issue}</span>
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                          item.severity === 'high'
+                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                            : item.severity === 'medium'
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                        }`}
+                      >
+                        {item.severity} Priority
+                      </span>
+                    </div>
+
+                    {item.evidence && (
+                      <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 font-mono italic">
+                        "{item.evidence}"
+                      </div>
+                    )}
+
+                    <div className="text-xs text-emerald-300/90 flex items-start gap-1.5 pt-1">
+                      <span className="font-semibold text-emerald-400 shrink-0">Fix:</span>
+                      <span>{item.recommendation}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section 3: Summary Gaps & Plan CTA */}
+          <div className="bg-gradient-to-r from-blue-950/40 via-indigo-950/30 to-[#121927] border border-blue-900/40 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-400" />
+                <span>Personalized 7-Day Improvement Plan Ready</span>
+              </h4>
+              <p className="text-xs text-slate-400 max-w-lg leading-relaxed">
+                Our AI coach has synthesized your answer diagnostics into a structured 7-day curriculum of daily drills to clear these gaps.
+              </p>
+            </div>
+
+            {onViewPlans && (
+              <button
+                onClick={onViewPlans}
+                className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-semibold text-xs shadow-md transition-all shrink-0 cursor-pointer"
+              >
+                <span>View 7-Day Plan</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
       )}

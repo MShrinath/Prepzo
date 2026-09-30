@@ -483,6 +483,7 @@ def submit_text_response(session_id: str, req: TextResponseSubmitRequest, db: Se
         "target_role": session.target_role,
         "competency": session.competency or "Problem Solving",
         "difficulty": session.difficulty,
+        "mode": session.mode,
         "question_type": "behavioral" if session.mode in ("hr", "company_archetype") else "technical",
         "current_question": req.question_text or "General interview question",
         "candidate_response": req.response,
@@ -604,7 +605,9 @@ def submit_text_response(session_id: str, req: TextResponseSubmitRequest, db: Se
     db.commit()
     db.refresh(resp_obj)
 
-    return resp_obj.to_dict()
+    res_dict = resp_obj.to_dict()
+    res_dict["improvement_plan"] = plan_data
+    return res_dict
 
 
 @router.post("/interviews/{session_id}/response/voice")
@@ -644,6 +647,7 @@ async def submit_voice_response(
         "target_role": session.target_role,
         "competency": session.competency or "Communication",
         "difficulty": session.difficulty,
+        "mode": session.mode,
         "question_type": "behavioral" if session.mode in ("hr", "company_archetype") else "technical",
         "current_question": question_text,
         "candidate_response": transcript,
@@ -751,7 +755,9 @@ async def submit_voice_response(
     db.commit()
     db.refresh(resp_obj)
 
-    return resp_obj.to_dict()
+    res_dict = resp_obj.to_dict()
+    res_dict["improvement_plan"] = plan_data
+    return res_dict
 
 
 @router.post("/interviews/{session_id}/follow-up")
@@ -770,9 +776,10 @@ def submit_follow_up_response(
         "candidate_id": session.candidate_id,
         "candidate_profile": candidate_dict,
         "target_role": session.target_role,
-        "competency": "Problem Solving",
+        "competency": session.competency or "Problem Solving",
         "difficulty": session.difficulty,
-        "question_type": "technical",
+        "mode": session.mode,
+        "question_type": "behavioral" if session.mode in ("hr", "company_archetype") else "technical",
         "current_question": req.follow_up_question,
         "candidate_response": req.response,
         "session_history": [r.to_dict() for r in session.responses],

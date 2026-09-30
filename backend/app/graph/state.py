@@ -9,6 +9,7 @@ class InterviewState(TypedDict, total=False):
     competency: str
     difficulty: str
     question_type: str
+    mode: Optional[str]
 
     current_question: str
     candidate_response: str

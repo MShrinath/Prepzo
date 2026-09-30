@@ -11,6 +11,8 @@ from app.api.interviews import router as interviews_router
 from app.api.conversational import router as conversational_router
 from app.api.story_bank import router as story_bank_router
 from app.api.export import router as export_router
+from app.api.llm_status import router as llm_status_router
+from app.llm.provider import status_tracker
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -41,6 +43,7 @@ app.include_router(interviews_router)
 app.include_router(conversational_router)
 app.include_router(story_bank_router)
 app.include_router(export_router)
+app.include_router(llm_status_router)
 
 # Mount uploads static files
 app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
@@ -61,6 +64,7 @@ def health_check():
         "llm_provider": settings.llm_provider,
         "whisper_provider": settings.whisper_provider,
         "database": "sqlite" if settings.database_url.startswith("sqlite") else "postgresql",
+        "llm_status": status_tracker.to_dict(),
     }
 
 

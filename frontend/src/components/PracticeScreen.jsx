@@ -408,15 +408,19 @@ export default function PracticeScreen({
       const star = evalData?.star_evaluation;
 
       const overall = fb?.overall_score || 75;
-      const commAvg = comm
-        ? Math.round((comm.clarity_score + comm.conciseness_score + comm.structure_score + comm.communication_quality_score) / 4)
-        : 75;
-      const techAvg = content
-        ? Math.round((content.technical_depth_score + content.correctness_score + content.relevance_score) / 3)
-        : 78;
-      const starAvg = star?.applicable
-        ? Math.round((star.situation_score + star.task_score + star.action_score + star.result_score) / 4)
-        : 70;
+      const commRaw = comm
+        ? (comm.clarity_score + comm.conciseness_score + comm.structure_score + comm.communication_quality_score) / 4
+        : 7.5;
+      const techRaw = content
+        ? (content.technical_depth_score + content.correctness_score + content.relevance_score) / 3
+        : 7.8;
+      const starRaw = star?.applicable
+        ? (star.situation_score + star.task_score + star.action_score + star.result_score) / 4
+        : 7.0;
+
+      const commAvg = Math.round(commRaw <= 10 ? commRaw * 10 : commRaw);
+      const techAvg = Math.round(techRaw <= 10 ? techRaw * 10 : techRaw);
+      const starAvg = Math.round(starRaw <= 10 ? starRaw * 10 : starRaw);
 
       const fillerCount = audioMetrics?.filler_words_count ?? 0;
       const fillerList = audioMetrics?.filler_words_detected || [];
@@ -548,15 +552,19 @@ export default function PracticeScreen({
       const star = evalData?.star_evaluation;
 
       const overall = fb?.overall_score || 75;
-      const commAvg = comm
-        ? Math.round((comm.clarity_score + comm.conciseness_score + comm.structure_score + comm.communication_quality_score) / 4)
-        : 75;
-      const techAvg = content
-        ? Math.round((content.technical_depth_score + content.correctness_score + content.relevance_score) / 3)
-        : 78;
-      const starAvg = star?.applicable
-        ? Math.round((star.situation_score + star.task_score + star.action_score + star.result_score) / 4)
-        : 70;
+      const commRaw = comm
+        ? (comm.clarity_score + comm.conciseness_score + comm.structure_score + comm.communication_quality_score) / 4
+        : 7.5;
+      const techRaw = content
+        ? (content.technical_depth_score + content.correctness_score + content.relevance_score) / 3
+        : 7.8;
+      const starRaw = star?.applicable
+        ? (star.situation_score + star.task_score + star.action_score + star.result_score) / 4
+        : 7.0;
+
+      const commAvg = Math.round(commRaw <= 10 ? commRaw * 10 : commRaw);
+      const techAvg = Math.round(techRaw <= 10 ? techRaw * 10 : techRaw);
+      const starAvg = Math.round(starRaw <= 10 ? starRaw * 10 : starRaw);
 
       // 1. Add dedicated Score & Feedback Infobox to timeline
       setMessages((prev) => [

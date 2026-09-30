@@ -118,3 +118,72 @@ class GapAnalysisOutput(BaseModel):
     match_score: Optional[int] = Field(default=70, description="Estimated match percentage (0 to 100) between resume and JD")
     skill_gap_details: List[SkillGapDetail] = Field(default_factory=list, description="In-depth analysis of each key gap with recommendations on how to improve")
     improvement_roadmap: List[StrategicRoadmapPhase] = Field(default_factory=list, description="Structured roadmap to bridge candidate's profile to the target JD")
+
+
+class DetectedProject(BaseModel):
+    name: str = Field(description="Name or title of the project")
+    description: str = Field(description="Summary of what the project does and candidate's contribution")
+    technologies: List[str] = Field(default_factory=list, description="Technologies, languages, frameworks, or databases used")
+    measurable_impact: Optional[str] = Field(default=None, description="Quantifiable metrics, scale, throughput, or business results achieved")
+    relevance_to_role: str = Field(default="Medium", description="High, Medium, or Low relevance to the target role")
+    strengths_for_role: Optional[str] = Field(default=None, description="Why this project demonstrates capability for the target role")
+    probing_areas: List[str] = Field(default_factory=list, description="Specific architectural trade-offs, bottlenecks, or failure modes an interviewer should probe")
+
+
+class WorkExperienceItem(BaseModel):
+    role_title: str = Field(description="Job title or designation")
+    company_or_org: Optional[str] = Field(default=None, description="Company or organization name")
+    duration_or_dates: Optional[str] = Field(default=None, description="Dates or duration of employment")
+    relevance_to_role: str = Field(default="Medium", description="High, Medium, or Low relevance to the target role")
+    key_achievements: List[str] = Field(default_factory=list, description="Key responsibilities and achievements in this role")
+
+
+class ExperienceAnalysis(BaseModel):
+    detected_years: int = Field(default=2, description="Estimated total years of professional experience")
+    seniority_level: str = Field(default="Mid-Level", description="Junior, Mid-Level, Senior, Lead/Staff, or Principal")
+    experience_match_score: int = Field(default=70, description="Match score (0-100) specifically for experience vs JD expectations")
+    experience_match_summary: str = Field(description="Assessment of candidate's career progression and alignment with JD requirements")
+    work_history: List[WorkExperienceItem] = Field(default_factory=list, description="Detected past roles and work experiences")
+    experience_strengths: List[str] = Field(default_factory=list, description="Key background strengths for this role")
+    experience_gaps: List[str] = Field(default_factory=list, description="Gaps in scale, leadership, or domain experience")
+
+
+class ProjectAnalysis(BaseModel):
+    detected_projects: List[DetectedProject] = Field(default_factory=list, description="Projects extracted and analyzed from the resume")
+    portfolio_strengths: List[str] = Field(default_factory=list, description="Key strengths demonstrated across candidate's project portfolio")
+    recommended_projects_to_build: List[str] = Field(default_factory=list, description="Concrete project ideas or PoCs to build to prove mastery of missing JD skills")
+
+
+class SkillsAnalysis(BaseModel):
+    matched_skills: List[str] = Field(default_factory=list, description="Skills present in resume that satisfy the JD requirements")
+    missing_skills: List[str] = Field(default_factory=list, description="Essential skills demanded in JD that are missing or weak in resume")
+    additional_skills: List[str] = Field(default_factory=list, description="Valuable candidate skills not explicitly required by JD")
+    skills_match_score: int = Field(default=70, description="Match score (0-100) specifically for technical skills")
+    skill_gap_details: List[SkillGapDetail] = Field(default_factory=list, description="Structured breakdown of missing skills with action plans")
+
+
+class ComprehensiveResumeAnalysis(BaseModel):
+    candidate_name: Optional[str] = Field(default=None, description="Candidate name extracted from resume")
+    email: Optional[str] = Field(default=None, description="Candidate email extracted from resume")
+    target_role: str = Field(description="Target role being evaluated for")
+    overall_match_score: int = Field(ge=0, le=100, description="Overall match percentage (0 to 100) between resume and JD")
+    experience_level_match: str = Field(description="Seniority assessment vs JD")
+    role_fit_summary: str = Field(description="Executive summary of candidate fit for the target role")
+    top_strengths: List[str] = Field(default_factory=list, description="Top 3 to 5 standout strengths for this role")
+    critical_risks_or_gaps: List[str] = Field(default_factory=list, description="Top risks, missing requirements, or gaps for this role")
+    
+    # Detailed sub-analyses
+    experience_analysis: ExperienceAnalysis
+    project_analysis: ProjectAnalysis
+    skills_analysis: SkillsAnalysis
+
+    # Top-level backward compatibility with GapAnalysisOutput
+    matched_skills: List[str] = Field(default_factory=list)
+    missing_skills: List[str] = Field(default_factory=list)
+    match_score: Optional[int] = Field(default=70)
+    tailored_focus_areas: List[str] = Field(default_factory=list)
+    recommended_technical_questions: List[str] = Field(default_factory=list)
+    recommended_gap_probing_questions: List[str] = Field(default_factory=list)
+    skill_gap_details: List[SkillGapDetail] = Field(default_factory=list)
+    improvement_roadmap: List[StrategicRoadmapPhase] = Field(default_factory=list)
+

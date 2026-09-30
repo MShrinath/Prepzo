@@ -32,13 +32,19 @@ export async function loginCandidate(loginData) {
   return res.json();
 }
 
-export async function uploadCandidateResume(candidateId, file, resumeText) {
+export async function uploadCandidateResume(candidateId, file, resumeText, jobDescription, targetRole) {
   const formData = new FormData();
   if (file) {
     formData.append('resume_file', file);
   }
   if (resumeText) {
     formData.append('resume_text', resumeText);
+  }
+  if (jobDescription) {
+    formData.append('job_description', jobDescription);
+  }
+  if (targetRole) {
+    formData.append('target_role', targetRole);
   }
   const res = await fetch(`${BASE_URL}/api/candidates/${candidateId}/resume`, {
     method: 'POST',
@@ -49,6 +55,10 @@ export async function uploadCandidateResume(candidateId, file, resumeText) {
     throw new Error(errData.detail || 'Failed to upload and parse resume');
   }
   return res.json();
+}
+
+export async function analyzeResumeAndJD(candidateId, file, resumeText, jobDescription, targetRole) {
+  return uploadCandidateResume(candidateId, file, resumeText, jobDescription, targetRole);
 }
 
 export async function fetchCandidateCapabilities(candidateId) {
@@ -177,6 +187,14 @@ export async function fetchImprovementPlan(candidateId = 'candidate_001') {
   return res.json();
 }
 
+export async function regenerateImprovementPlan(candidateId = 'candidate_001') {
+  const res = await fetch(`${BASE_URL}/api/candidates/${candidateId}/regenerate-plan`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to regenerate improvement plan');
+  return res.json();
+}
+
 export async function fetchNextQuestion(sessionId) {
   const res = await fetch(`${BASE_URL}/api/interviews/${sessionId}/question`, {
     method: 'POST',
@@ -283,6 +301,42 @@ export async function exportDossierPDF(candidateId = 'candidate_001') {
 export async function fetchPercentileRanking(candidateId = 'candidate_001') {
   const res = await fetch(`${BASE_URL}/api/candidates/${candidateId}/percentile`);
   if (!res.ok) throw new Error('Failed to fetch percentile ranking');
+  return res.json();
+}
+
+// ===== LLM Health & Fallback Diagnostic APIs =====
+
+export async function fetchLLMStatus() {
+  try {
+    const res = await fetch(`${BASE_URL}/api/llm/status`);
+    if (!res.ok) throw new Error('Failed to fetch LLM status');
+    return res.json();
+  } catch (err) {
+    return {
+      status: 'fallback',
+      fallback_mode: true,
+      provider: 'offline',
+      is_healthy: false,
+      last_error: 'Unable to reach backend API',
+    };
+  }
+}
+
+export async function verifyLLMConnection() {
+  const res = await fetch(`${BASE_URL}/api/llm/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error('Failed to verify LLM connection');
+  return res.json();
+}
+
+export async function resetLLMCircuit() {
+  const res = await fetch(`${BASE_URL}/api/llm/reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) throw new Error('Failed to reset LLM circuit');
   return res.json();
 }
 

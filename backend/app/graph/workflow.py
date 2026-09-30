@@ -35,8 +35,16 @@ def create_interview_workflow():
         question = state.get("current_question", "")
         response_text = state.get("candidate_response", "")
         competency = state.get("competency")
+        question_type = state.get("question_type", "technical")
+        mode = state.get("mode")
 
-        result = content_agent.evaluate(question, response_text, competency=competency)
+        result = content_agent.evaluate(
+            question,
+            response_text,
+            competency=competency,
+            question_type=question_type,
+            mode=mode,
+        )
         return {"content_evaluation": result.model_dump()}
 
     def node_star(state: InterviewState) -> Dict[str, Any]:
@@ -51,12 +59,15 @@ def create_interview_workflow():
         # Merge specialist results and check if deeper analysis is needed
         comm_data = state.get("communication_analysis", {})
         content_data = state.get("content_evaluation", {})
+        mode = state.get("mode")
+        q_type = state.get("question_type", "technical")
+        is_hr = (mode == "hr") or (q_type == "behavioral")
 
         clarity = comm_data.get("clarity", 10)
-        tech_depth = content_data.get("technical_depth", 10)
+        depth = content_data.get("technical_depth", 10)
 
-        # Flag deeper analysis condition (agent handoff)
-        needs_deeper = clarity < 6 or tech_depth < 6
+        # In HR mode, prioritize clarity; do not trigger deeper code diagnostic if clarity is acceptable
+        needs_deeper = clarity < 6 or (depth < 6 and not is_hr)
         return {"next_action": "deeper_analysis" if needs_deeper else "coach_synthesis"}
 
     def node_deeper_analysis(state: InterviewState) -> Dict[str, Any]:
@@ -86,6 +97,8 @@ def create_interview_workflow():
         star_data = STAREvaluationOutput(**state.get("star_analysis", {}))
         candidate_profile = state.get("candidate_profile")
         session_history = state.get("session_history", [])
+        mode = state.get("mode") or ("hr" if state.get("question_type") == "behavioral" else "role_practice")
+        question_type = state.get("question_type")
 
         feedback = coach_agent.synthesize_feedback(
             question=question,
@@ -95,12 +108,20 @@ def create_interview_workflow():
             star=star_data,
             candidate_profile=candidate_profile,
             session_history=session_history,
+            mode=mode,
+            question_type=question_type,
         )
 
         recurring = coach_agent.detect_recurring_gaps(session_history)
         target_role = state.get("target_role", "SDE")
         candidate_name = candidate_profile.get("name", "Candidate") if candidate_profile else "Candidate"
-        plan = coach_agent.generate_improvement_plan(target_role, recurring, candidate_name)
+        plan = coach_agent.generate_improvement_plan(
+            target_role=target_role,
+            recurring_gaps=recurring,
+            candidate_name=candidate_name,
+            latest_feedback=feedback.model_dump(),
+            mode=mode,
+        )
 
         return {
             "final_feedback": feedback.model_dump(),

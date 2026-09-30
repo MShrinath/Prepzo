@@ -26,7 +26,16 @@ class ContentAgent:
         response_text: str,
         evaluation_criteria: Optional[List[str]] = None,
         competency: Optional[str] = None,
+        question_type: Optional[str] = "technical",
+        mode: Optional[str] = None,
     ) -> ContentEvaluationOutput:
+        is_behavioral = (
+            (question_type in ("behavioral", "situational")) or
+            (mode in ("hr", "behavioral")) or
+            ("behavioral" in str(competency).lower()) or
+            any(kw in question.lower() for kw in ["tell me about a time", "describe a situation", "disagreed", "conflict", "leadership"])
+        )
+
         if is_trivial_response(response_text):
             return ContentEvaluationOutput(
                 relevance=1,
@@ -35,25 +44,37 @@ class ContentAgent:
                 technical_depth=1,
                 evidence_quality=1,
                 strengths=[],
-                gaps=["Candidate provided no substantive answer or technical content to the question asked."],
+                gaps=["Candidate provided no substantive answer to the question asked."],
             )
 
         criteria_str = "\n".join([f"- {c}" for c in (evaluation_criteria or [])])
         if not criteria_str:
-            criteria_str = "- Directly answers the prompt\n- Explains technical/operational methodology\n- Provides verifiable context or metrics"
+            if is_behavioral:
+                criteria_str = "- Directly addresses the behavioral situation\n- Clarifies personal actions and decision-making\n- Concludes with measurable outcomes or learnings"
+            else:
+                criteria_str = "- Directly answers the prompt\n- Explains technical/operational methodology\n- Provides verifiable context or metrics"
+
+        behavioral_instruction = """NOTE: This is a BEHAVIORAL / LEADERSHIP question.
+Do NOT penalize the candidate for lack of low-level code syntax, database internals, or infrastructure configs.
+Evaluate OPERATIONAL & SITUATIONAL DEPTH: did they explain specific real-world challenges, personal ownership, stakeholder management, and business outcomes?"""
+
+        technical_instruction = """NOTE: This is a TECHNICAL question.
+Evaluate technical depth, correctness of architecture, system mechanics, algorithms, and trade-offs."""
 
         prompt = f"""You are the Content Evaluation Agent.
-Your responsibility is to determine whether the candidate substantively answered the question asked with sufficient technical or operational depth.
+Your responsibility is to determine whether the candidate substantively answered the question asked with sufficient operational and situational depth.
+
+{behavioral_instruction if is_behavioral else technical_instruction}
 
 CRITICAL SCORING RULE:
-If the candidate's response does not address the question, is a simple greeting ('hi', 'hello'), off-topic, evasive, or lacks technical/operational content:
+If the candidate's response does not address the question, is a simple greeting ('hi', 'hello'), off-topic, evasive, or lacks substantive content:
 - Set relevance=1, correctness=1, completeness=1, technical_depth=1, evidence_quality=1.
 - strengths MUST be an empty array [].
 - gaps MUST state that no substantive response was provided.
 - Do NOT give passing marks to greetings or superficial non-answers.
 
 Question: "{question}"
-Target Competency: {competency or "General"}
+Target Competency: {competency or ("Behavioral Leadership" if is_behavioral else "Technical Fundamentals")}
 Target Evaluation Criteria:
 {criteria_str}
 
@@ -62,49 +83,63 @@ Candidate Response:
 
 Evaluate:
 - relevance (1-10): Did the candidate directly address the core prompt without deflecting?
-- correctness (1-10): Are the stated concepts, algorithms, frameworks, or procedures accurate?
+- correctness (1-10): {'Are the leadership, problem-solving, and communication decisions sound?' if is_behavioral else 'Are the stated concepts, algorithms, frameworks, or procedures accurate?'}
 - completeness (1-10): Were all parts of the question addressed?
-- technical_depth (1-10): Does the response show genuine practical familiarity or only surface buzzwords?
-- evidence_quality (1-10): Did the candidate back up their claims with concrete examples, tools, or metrics?
+- technical_depth (1-10): {'Operational and situational depth: realism of challenges, specific interventions, stakeholder handling.' if is_behavioral else 'Does the response show genuine practical familiarity or only surface buzzwords?'}
+- evidence_quality (1-10): Did the candidate back up their claims with concrete examples, business impact, or metrics?
 - strengths: list specific substantive elements handled well.
 - gaps: list specific missing details, unverified claims, or omitted criteria.
 
 Return JSON strictly matching the schema."""
 
-        # Deterministic fallback evaluation based on keyword presence and length
-        has_deep_tech = any(kw in response_text.lower() for kw in [
-            "apm", "datadog", "py-spy", "flamegraph", "pg_stat", "composite index",
-            "redis", "pgbouncer", "celery", "ragas", "bm25", "rerank", "acid", "hybrid search",
-            "grafana", "sqlalchemy", "connection leak", "hotfix", "ci pipeline", "rollback"
-        ])
-        is_superficial = any(kw in response_text.lower() for kw in [
-            "add more servers", "increase the ram", "restart the database", "panicked", "someone found"
-        ])
-        is_brief = len(response_text.split()) < 20 and not has_deep_tech
-
-        relevance = 4 if is_superficial else (9 if has_deep_tech else (5 if is_brief else 8))
-        correctness = 3 if is_superficial else (9 if has_deep_tech else 7)
-        tech_depth = 2 if is_superficial else (9 if has_deep_tech else (4 if is_brief else 7))
-        evidence_quality = 2 if is_superficial else (9 if has_deep_tech else 6)
-
-        fallback = {
-            "relevance": relevance,
-            "correctness": correctness,
-            "completeness": 4 if (is_brief or is_superficial) else (9 if has_deep_tech else 7),
-            "technical_depth": tech_depth,
-            "evidence_quality": evidence_quality,
-            "strengths": [
+        # Deterministic fallback evaluation
+        if is_behavioral:
+            has_substance = any(kw in response_text.lower() for kw in [
+                "i decided", "i led", "i proposed", "i scheduled", "i spoke with", "we agreed",
+                "resolved", "impact", "delivered", "outcome", "improved", "result"
+            ])
+            is_superficial = len(response_text.split()) < 25 and not has_substance
+            relevance = 8 if has_substance else (4 if is_superficial else 7)
+            correctness = 8 if has_substance else (4 if is_superficial else 7)
+            tech_depth = 8 if has_substance else (3 if is_superficial else 6)
+            evidence_quality = 8 if has_substance else (3 if is_superficial else 6)
+            completeness = 8 if has_substance else (3 if is_superficial else 6)
+            fallback_strengths = ["Addressed the core behavioral scenario with concrete personal actions."] if has_substance else ["Addressed the question topic."]
+            fallback_gaps = ["Could further quantify the final business or team impact."] if has_substance else ["Lacks concrete personal interventions and measurable outcome."]
+        else:
+            has_deep_tech = any(kw in response_text.lower() for kw in [
+                "apm", "datadog", "py-spy", "flamegraph", "pg_stat", "composite index",
+                "redis", "pgbouncer", "celery", "ragas", "bm25", "rerank", "acid", "hybrid search",
+                "grafana", "sqlalchemy", "connection leak", "hotfix", "ci pipeline", "rollback"
+            ])
+            is_superficial = any(kw in response_text.lower() for kw in [
+                "add more servers", "increase the ram", "restart the database", "panicked", "someone found"
+            ])
+            is_brief = len(response_text.split()) < 20 and not has_deep_tech
+            relevance = 4 if is_superficial else (9 if has_deep_tech else (5 if is_brief else 8))
+            correctness = 3 if is_superficial else (9 if has_deep_tech else 7)
+            tech_depth = 2 if is_superficial else (9 if has_deep_tech else (4 if is_brief else 7))
+            evidence_quality = 2 if is_superficial else (9 if has_deep_tech else 6)
+            completeness = 4 if (is_brief or is_superficial) else (9 if has_deep_tech else 7)
+            fallback_strengths = [
                 "Demonstrated deep production understanding and concrete technical interventions.",
                 "Explicitly identified profiling tools, architectural layers, and performance metrics."
-            ] if has_deep_tech else [
-                "Addressed the primary topic of the question."
-            ],
-            "gaps": [
+            ] if has_deep_tech else ["Addressed the primary topic of the question."]
+            fallback_gaps = [
                 "Lacks actionable troubleshooting methodology.",
                 "Superficial scaling advice without root-cause analysis."
             ] if is_superficial else (
                 ["Could include more quantitative metrics."] if has_deep_tech else ["Could detail specific architectural alternatives."]
             )
+
+        fallback = {
+            "relevance": relevance,
+            "correctness": correctness,
+            "completeness": completeness,
+            "technical_depth": tech_depth,
+            "evidence_quality": evidence_quality,
+            "strengths": fallback_strengths,
+            "gaps": fallback_gaps,
         }
 
         return parse_structured_output(

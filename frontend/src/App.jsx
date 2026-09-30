@@ -65,7 +65,12 @@ export default function App() {
 
     fetchCandidateProgress(candId)
       .then((progress) => {
-        if (progress) setCandidateProgress(progress);
+        if (progress) {
+          setCandidateProgress(progress);
+          if (progress.latest_evaluation) {
+            setEvaluationResult(progress.latest_evaluation);
+          }
+        }
       })
       .catch((err) => console.log('Using baseline candidate progress:', err));
   }, []);
@@ -73,7 +78,12 @@ export default function App() {
   const refreshProgress = () => {
     fetchCandidateProgress(candidate?.candidate_id || 'candidate_001')
       .then((prog) => {
-        if (prog) setCandidateProgress(prog);
+        if (prog) {
+          setCandidateProgress(prog);
+          if (prog.latest_evaluation) {
+            setEvaluationResult((prev) => prev || prog.latest_evaluation);
+          }
+        }
       })
       .catch((err) => console.warn('Progress refresh:', err));
   };
@@ -187,6 +197,7 @@ export default function App() {
               initialTab={resultsTab}
               onRetakeInterview={handleRetakeInterview}
               onDownloadReport={handleDownloadReport}
+              onViewPlans={() => setView('plans')}
             />
           )}
 
