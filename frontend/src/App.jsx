@@ -142,6 +142,22 @@ export default function App() {
     window.print();
   };
 
+  const handleSelectPastSession = (sessionItem) => {
+    if (sessionItem?.evaluation) {
+      setEvaluationResult(sessionItem.evaluation);
+    }
+    setSessionData({
+      session_id: sessionItem.session_id,
+      target_role: sessionItem.target_role,
+      role: sessionItem.target_role,
+      mode: sessionItem.mode,
+      difficulty: sessionItem.difficulty,
+      question: { question: sessionItem.question_text },
+    });
+    setResultsTab('detailed');
+    setView('progress');
+  };
+
   return (
     <div className="min-h-screen bg-[#070B14] text-slate-100 flex font-sans selection:bg-blue-600 selection:text-white transition-colors duration-200">
       {/* 1. Left Sidebar Navigation */}
@@ -175,6 +191,7 @@ export default function App() {
                 setView('progress');
               }}
               onViewPlans={() => setView('plans')}
+              onSelectSession={handleSelectPastSession}
             />
           )}
 

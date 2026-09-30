@@ -33,6 +33,16 @@ export default function ResultsScreen({
   const [selectedDonut, setSelectedDonut] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
 
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  React.useEffect(() => {
+    setSelectedDonut(null);
+  }, [evaluationData]);
+
   const totalSessions = candidateProgress?.total_sessions ?? (evaluationData ? 1 : 0);
 
   // If completely empty with zero evaluations and zero sessions

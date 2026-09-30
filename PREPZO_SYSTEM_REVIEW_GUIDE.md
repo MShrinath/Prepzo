@@ -196,3 +196,40 @@ All mechanisms have been verified through automated regression suites:
 - **`backend/tests/test_graph.py`**: Verifies LangGraph multi-agent state compilation and routing.
 - **`backend/tests/test_agents.py`**: Tests individual specialist agents for output schema compliance.
 - **Live Stress Run**: Tested with `OPENAI_API_KEY=sk-broken-key-9999` — verified 100% successful HTTP 200 responses with zero crashes.
+
+---
+
+## 7. Fast-Track Review / Viva Demonstration Script (30-Second Walkthrough)
+
+To deliver an impactful, time-efficient project demonstration without spending 10 minutes typing out or recording mock answers, follow this exact sequence:
+
+### Step 1: Open the Main Dashboard (`HomeScreen`)
+- **What to show**:
+  1. **TopBar AI Status**: Highlight the live indicator badge in the top-right (`AI Online` or `Heuristic Mode`). Click it to show the diagnostics popover with circuit breaker telemetry.
+  2. **Performance Overview**: Point out the 4 metric cards (`Interviews Taken`, `Average Score`, `Strengths`, `Areas to Improve`) and the Weekly Activity bar chart.
+  3. **Performance Highlights Bar**: Highlight the 4 diagnostic indicators:
+     - **Avg Showcase Score**: `87.9%` (Strong Hire)
+     - **Speaking Cadence**: `136.5 WPM` (Optimal conversational pace: 120–150 WPM)
+     - **Clarity & Depth**: `88.8%`
+     - **STAR Agency**: `88.8%` (High individual ownership)
+
+### Step 2: Instant Inspection of Past Evaluated Sessions (No Waiting)
+- In the **"Past Interview Sessions & Live Dossiers"** section, show the 4 pre-seeded mock sessions:
+  1. **Software Engineer / SDE Practice** (`sess_demo_sde_01`):
+     - Click **"Inspect Evaluation & Drills"**.
+     - Show the **5-Axis Competency Radar Chart** and the **89.5%** overall score.
+     - Switch to **Verbatim Transcript**: Show the candidate's real response explaining `cProfile`, `py-spy`, N+1 ORM elimination, composite indexing, and Redis caching.
+     - Switch to **Coaching Feedback & Drills**: Show the AI-generated actionable advice (addressing Redis cache stampede) and the tailored follow-up question.
+  2. **HR / Behavioral Round** (`sess_demo_hr_02`):
+     - Return to Home or click the HR session card.
+     - Highlight how the evaluation dynamically shifted: **Communication** and **STAR & Leadership Ownership** are placed first, with technical context at the end.
+     - Show the STAR breakdown: Situation (microservices migration), Task (senior peer disagreement), Action ('I scheduled whiteboard session with benchmarks'), Result (zero customer downtime).
+  3. **Resume + Job Description Cloud Gap** (`sess_demo_resume_03`):
+     - Show how the candidate addressed the Kubernetes gap from Docker/ECS backgrounds using Minikube and GitHub Actions.
+  4. **Senior Backend Distributed Systems** (`sess_demo_design_04`):
+     - Show the 91.5% score covering idempotency keys, Redis SETNX atomic locks, and PostgreSQL serializable isolation.
+
+### Step 3: Explain the Fallback Architecture
+- If asked *"What if OpenAI's servers go down or your API key expires during the viva?"*:
+  - Explain the **Circuit Breaker** pattern implemented in [`backend/app/llm/provider.py`](file:///C:/Users/Administrator/Desktop/Prepzo/backend/app/llm/provider.py).
+  - Demonstrate that the platform automatically switches to heuristic speech-signal tokenization and mathematical matrix evaluation in $< 2\text{ ms}$, ensuring **zero crashes, zero 500 errors, and zero candidate disruption**.

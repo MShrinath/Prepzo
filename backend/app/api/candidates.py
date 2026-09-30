@@ -194,13 +194,41 @@ def get_candidate_progress(candidate_id: str, db: Session = Depends(get_db)):
 
     # Retrieve latest evaluated response to persist real evaluation data
     latest_eval = None
+    recent_sessions = []
     for s in reversed(sessions):
+        eval_resp = None
         for resp in reversed(s.responses):
             if resp.coaching_feedback:
-                latest_eval = resp.to_dict()
+                eval_resp = resp
+                if not latest_eval:
+                    latest_eval = resp.to_dict()
                 break
-        if latest_eval:
-            break
+
+        if eval_resp and eval_resp.coaching_feedback:
+            fb = eval_resp.coaching_feedback
+            comm = eval_resp.communication_evaluation
+            cont = eval_resp.content_evaluation
+            star = eval_resp.star_evaluation
+            recent_sessions.append({
+                "session_id": s.session_id,
+                "target_role": s.target_role or "Software Engineer",
+                "mode": s.mode or "role_practice",
+                "difficulty": s.difficulty or "medium",
+                "date": s.created_at.strftime("%b %d, %H:%M") if s.created_at else "Recently",
+                "question_text": eval_resp.question_text or s.current_question or "Interview Question",
+                "overall_score": fb.overall_score if fb else 75.0,
+                "communication_score": round(comm.communication_quality_score * 10) if comm else 70,
+                "content_score": round(cont.technical_depth_score * 10) if cont else 70,
+                "star_score": round(star.action_score * 10) if (star and star.applicable) else 70,
+                "wpm": round(eval_resp.speaking_rate or 136.0, 1),
+                "filler_words_count": eval_resp.filler_words_count or 0,
+                "response_excerpt": (eval_resp.response_text[:170] + "...") if len(eval_resp.response_text) > 170 else eval_resp.response_text,
+                "evaluation": eval_resp.to_dict(),
+            })
+
+    demo_sessions = [s for s in recent_sessions if "demo" in s["session_id"]]
+    other_sessions = [s for s in recent_sessions if "demo" not in s["session_id"]]
+    final_recent = (demo_sessions + other_sessions)[:8]
 
     return {
         "candidate_id": candidate_id,
@@ -212,6 +240,7 @@ def get_candidate_progress(candidate_id: str, db: Session = Depends(get_db)):
         "average_communication_score": avg_comm,
         "average_content_score": avg_content,
         "timeline": session_scores,
+        "recent_sessions": final_recent,
         "latest_evaluation": latest_eval,
     }
 
